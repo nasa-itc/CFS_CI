@@ -43,7 +43,7 @@ extern "C" {
 
 /* Note, this header uses a mission name prefix convention.
    This include may need to be altered. */
-#include "CFS_TST_ci_types.h"
+#include "MISSION_ci_types.h"
 
 /*
 ** Local Structure Declarations
