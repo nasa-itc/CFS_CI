@@ -312,26 +312,45 @@ int32 CI_CustomReadCltuSocket(void)
     CI_CustomMChnl_t *pMc = &pPc->mc;
     TCTF_Hdr_t    *pTf = (TCTF_Hdr_t *) &pMc->tfBuff;
 
+    uint8_t* TC_ptr = &pPc->cltuBuff[0];
+    CFE_SB_Msg_t  *pSbMsg = &pPc->cltuBuff[5];
+
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
                           &pPc->cltuBuff[0], 
                           CI_CUSTOM_CLTU_BUFF_SIZE); 
 
-    /* Get the de-randomized transfer frame from the CLTU */
-    iStatus = TC_SYNC_GetTransferFrame(pMc->tfBuff, pPc->cltuBuff,
-                                       CI_CUSTOM_TF_BUFF_SIZE,
-                                       CI_CUSTOM_CLTU_BUFF_SIZE,
-                                       pPc->cltuRand);
-
-    if (iStatus < 0)
-    {
-        /* Here we will ignore any non-cltu message. */
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
-                          "CI: Reveived invalid CLTU. Message Ignored.");
-        return 0;
-    }
+    ///* Get the de-randomized transfer frame from the CLTU */
+    //iStatus = TC_SYNC_GetTransferFrame(pMc->tfBuff, pPc->cltuBuff,
+    //                                   CI_CUSTOM_TF_BUFF_SIZE,
+    //                                   CI_CUSTOM_CLTU_BUFF_SIZE,
+    //                                   pPc->cltuRand);
+    //
+    //if (iStatus < 0)
+    //{
+    //    /* Here we will ignore any non-cltu message. */
+    //    CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+    //                      "CI: Reveived invalid CLTU. Message Ignored. iStatus = %d", iStatus);
+    //    return 0;
+    //}
     
-    CI_CustomProcessFrame(pTf, pMc);
+    //CI_CustomProcessFrame(pTf, pMc);
+
+    /* 
+    ** In this implementation it is assumed that:
+    **   Recevied TC frame is complete without errors
+    **   A single Space Packet is in the TC frame
+    **   Code blocks are not in use
+    **   COP-1 is not in use
+    **   No segment header
+    **   No FECF
+    */
+
+    /* CryptoLib */
+    
+    
+    /* Publish to software bus */
+    CFE_SB_SendMsg(pSbMsg);
 
     return size;
 }
@@ -374,6 +393,14 @@ void CI_CustomProcessFrame(TCTF_Hdr_t *pTf, CI_CustomMChnl_t *pMc)
     /* NOTE: For MAP Service, a packet may be split over multiple TF */
     pSbMsg = (CFE_SB_Msg_t *) pMc->vChnls[chIdx].pktBuff;
     pSbMsgCursor = (uint8 *) pSbMsg;
+
+    /* Debug prints */
+    OS_printf("CI_CustomProcessFrame - pTf[%d] 0x", TCTF_HDR_SIZE);
+    for (uint16 i = 0; i < TCTF_HDR_SIZE; i++)
+    {
+        OS_printf("%02x", pTf[i]);
+    }
+    OS_printf("\n");
 
     /* Process the TCTF with COP1 */ 
     size = COP1_ProcessFrame((uint8 *) pSbMsg, pClcw, pTf,
