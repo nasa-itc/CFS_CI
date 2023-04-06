@@ -41,6 +41,8 @@ extern "C" {
 #include "../ci/fsw/src/ci_hktlm.h"
 #include "../to/fsw/mission_inc/to_mission_cfg.h"
 
+#include "crypto.h"
+
 /*
 ** Local Defines
 */

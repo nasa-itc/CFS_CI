@@ -313,7 +313,11 @@ int32 CI_CustomReadCltuSocket(void)
     TCTF_Hdr_t    *pTf = (TCTF_Hdr_t *) &pMc->tfBuff;
 
     uint8_t* TC_ptr = &pPc->cltuBuff[0];
-    CFE_SB_Msg_t  *pSbMsg = &pPc->cltuBuff[5];
+    CFE_SB_Msg_t  *pSbMsg;
+
+    /* CryptoLib Variables */
+    TC_t crypto_tc_frame; 
+    pSbMsg = &crypto_tc_frame.tc_pdu;
 
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
@@ -336,22 +340,34 @@ int32 CI_CustomReadCltuSocket(void)
     
     //CI_CustomProcessFrame(pTf, pMc);
 
+
     /* 
     ** In this implementation it is assumed that:
     **   Recevied TC frame is complete without errors
     **   A single Space Packet is in the TC frame
     **   Code blocks are not in use
     **   COP-1 is not in use
-    **   No segment header
-    **   No FECF
     */
 
-    /* CryptoLib */
-    
-    
-    /* Publish to software bus */
-    CFE_SB_SendMsg(pSbMsg);
+   /* Debug prints */
+    OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
+    for (uint16 i = 0; i < size; i++)
+    {
+        OS_printf("%02x", pPc->cltuBuff[i]);
+    }
+    OS_printf("\n");
 
+    /* CryptoLib */
+    iStatus = Crypto_TC_ProcessSecurity((char *) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
+    if (iStatus == CRYPTO_LIB_SUCCESS)
+    {
+        /* Publish to software bus */
+        CFE_SB_SendMsg(pSbMsg);
+    }
+    else
+    {
+            OS_printf("CI_CustomReadCltuSocket - Crypto_TC_ProcessSecurity returned error %d \n", iStatus);
+    }
     return size;
 }
 
