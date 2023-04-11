@@ -31,6 +31,9 @@ extern "C" {
 /*
 ** Local Defines
 */
+
+//#define CI_CUSTOM_DEBUG
+
 /* Check new commands every 1s if not scheduled */
 #define CI_WAKEUP_TIMEOUT  1000  
 

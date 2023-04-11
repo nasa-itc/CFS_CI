@@ -116,8 +116,6 @@ CI_CustomData_t g_CI_CustomData;
 ** Local Function Definitions
 */
 static int32 CI_CustomReadCltuSocket(void);
-static void CI_CustomProcessFrame(TCTF_Hdr_t *pTf, CI_CustomMChnl_t *pMc);
-static void CI_CustomProcessPacket(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId);
 
 
 /*******************************************************************************
@@ -324,23 +322,6 @@ int32 CI_CustomReadCltuSocket(void)
                           &pPc->cltuBuff[0], 
                           CI_CUSTOM_CLTU_BUFF_SIZE); 
 
-    ///* Get the de-randomized transfer frame from the CLTU */
-    //iStatus = TC_SYNC_GetTransferFrame(pMc->tfBuff, pPc->cltuBuff,
-    //                                   CI_CUSTOM_TF_BUFF_SIZE,
-    //                                   CI_CUSTOM_CLTU_BUFF_SIZE,
-    //                                   pPc->cltuRand);
-    //
-    //if (iStatus < 0)
-    //{
-    //    /* Here we will ignore any non-cltu message. */
-    //    CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
-    //                      "CI: Reveived invalid CLTU. Message Ignored. iStatus = %d", iStatus);
-    //    return 0;
-    //}
-    
-    //CI_CustomProcessFrame(pTf, pMc);
-
-
     /* 
     ** In this implementation it is assumed that:
     **   Recevied TC frame is complete without errors
@@ -349,166 +330,38 @@ int32 CI_CustomReadCltuSocket(void)
     **   COP-1 is not in use
     */
 
-   /* Debug prints */
-    OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
-    for (uint16 i = 0; i < size; i++)
-    {
-        OS_printf("%02x", pPc->cltuBuff[i]);
-    }
-    OS_printf("\n");
+   #ifdef CI_CUSTOM_DEBUG
+    /* Debug prints */
+        OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
+        for (uint16 i = 0; i < size; i++)
+        {
+            OS_printf("%02x", pPc->cltuBuff[i]);
+        }
+        OS_printf("\n");
+    #endif
 
     /* CryptoLib */
     iStatus = Crypto_TC_ProcessSecurity((char *) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
     if (iStatus == CRYPTO_LIB_SUCCESS)
     {
+        #ifdef CI_CUSTOM_DEBUG
+            /* Debug prints */
+            OS_printf("CI_CustomReadCltuSocket - crypto_tc_frame.tc_pdu[%d] = 0x", crypto_tc_frame.tc_pdu_len);
+            for (uint16 i = 0; i < crypto_tc_frame.tc_pdu_len; i++)
+            {
+                OS_printf("%02x", crypto_tc_frame.tc_pdu[i]);
+            }
+            OS_printf("\n");
+        #endif
+
         /* Publish to software bus */
         CFE_SB_SendMsg(pSbMsg);
     }
     else
     {
-            OS_printf("CI_CustomReadCltuSocket - Crypto_TC_ProcessSecurity returned error %d \n", iStatus);
+        OS_printf("CI_CustomReadCltuSocket - Crypto_TC_ProcessSecurity returned error %d \n", iStatus);
     }
     return size;
-}
-
-
-/******************************************************************************/
-/** \brief Custom Process TF (Private)
-*******************************************************************************/
-void CI_CustomProcessFrame(TCTF_Hdr_t *pTf, CI_CustomMChnl_t *pMc)
-{
-    /* Get Transfer Frame Size */
-    int32 size = 0;
-    uint16 msgSize = 0;
-    uint16 tfScId = TCTF_GetScId(pTf);
-    uint16 tfVcId = TCTF_GetVcId(pTf);
-    CFE_SB_Msg_t  *pSbMsg = NULL;
-    uint8         *pSbMsgCursor = NULL;
-    CFE_SB_MsgId_t msgId = 0;
-    CFE_SB_Msg_t  *pClcwCmd = (CFE_SB_Msg_t *) &pMc->vChnls[0].clcwCmd;
-    COP1_Clcw_t   *pClcw =
-        (COP1_Clcw_t *) CFE_SB_GetUserData((void *)&pMc->vChnls[0].clcwCmd);
-    
-    /* Here you would route to different virtual channels based on the 
-     * tfVcId. We are not using MAP services so all channels are virtual
-     * channels. We only have one virtual channel in this example. */
-    uint16 chIdx = 0;
-    
-    uint16 tfDataSize = 
-        TCTF_GetPayloadLength(pTf, &pMc->vChnls[chIdx].chnlService);
-
-    if (tfDataSize > CI_CUSTOM_BUFFER_SIZE)
-    {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
-                          "CI: Transfer Frame length larger than buffer. "
-                          "Transfer Frame SC ID:0x%x, VC ID:0x%x dropped.", 
-                          tfScId, tfVcId);
-        return;
-    }
-    
-    /* NOTE: For MAP Service, a packet may be split over multiple TF */
-    pSbMsg = (CFE_SB_Msg_t *) pMc->vChnls[chIdx].pktBuff;
-    pSbMsgCursor = (uint8 *) pSbMsg;
-
-    /* Debug prints */
-    OS_printf("CI_CustomProcessFrame - pTf[%d] 0x", TCTF_HDR_SIZE);
-    for (uint16 i = 0; i < TCTF_HDR_SIZE; i++)
-    {
-        OS_printf("%02x", pTf[i]);
-    }
-    OS_printf("\n");
-
-    /* Process the TCTF with COP1 */ 
-    size = COP1_ProcessFrame((uint8 *) pSbMsg, pClcw, pTf,
-                             &pMc->vChnls[chIdx].chnlService);
-
-    /* Send the CLCW message for TO */
-    CFE_SB_SendMsg(pClcwCmd);
-    
-    while (size > 0)
-    {
-        msgSize = CFE_SB_GetTotalMsgLength(pSbMsg);
-        msgId = CFE_SB_GetMsgId(pSbMsg);
-        
-        pSbMsg = (CFE_SB_Msg_t *) pSbMsgCursor;
-        pSbMsgCursor += msgSize;
-        size -= msgSize;
-
-        /* Note that this can be  normal behavior for MAP service. 
-         * MAP services may split packets over multiple MAP channels 
-         * We aren't using MAP service in this example. */
-        if (size < 0)
-        {
-            CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
-                "CI: Incomplete packet in Transfer Frame dropped. "
-                "Transfer Frame SC ID:0x%x, VC ID:0x%x, "
-                "Packet ID:0x%x.", tfScId, tfVcId, msgId);
-        }
-        else
-        {
-            CI_CustomProcessPacket(pSbMsg, msgId);
-        }
-    }
-}
-
-/******************************************************************************/
-/** \brief Custom Process Packet (Private)
-*******************************************************************************/
-void CI_CustomProcessPacket(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId)
-{
-     /* CCSDS command checksum check. */
-     if (CFE_SB_ValidateChecksum(pSbMsg) == FALSE)
-     {
-         uint16 cmdCode = CFE_SB_GetCmdCode(pSbMsg);
-         CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
-                           "CI: MID:0x%04x - Cmd Checksum failed. CmdCode:%u",
-                           msgId, cmdCode);
-         return;
-     }
-
-     /* If command is GATE command, execute immediately. */
-     if (msgId == CI_GATE_CMD_MID)
-     {
-         CI_CustomGateCmds(pSbMsg);
-     }
-     /* Any other message is passed through to the SB. */
-     else 
-     {
-         CFE_SB_SendMsg(pSbMsg);
-     }
-
-    return;
-}
-   
-/******************************************************************************/
-/** \brief Custom Gate command response
-*******************************************************************************/
-void CI_CustomGateCmds(CFE_SB_MsgPtr_t pCmdMsg)
-{
-    uint32 uiCmdCode = 0;
-
-    uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
-    switch (uiCmdCode)
-    {
-        /*  Example of a valid custom command.
-        case CI_EXAMPLE_GATE_CC:
-            if (CI_VerifyCmdLength(pCmdMsg, sizeof(CI_CustomExampleCmd_t)))
-            {
-                CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
-                                  "CI: Recvd example custom gate cmd (%d)", uiCmdCode);
-            }
-            break;
-        */
-
-        default:
-            CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
-            CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
-                              "CI: Recvd invalid Gate cmd (%d)", uiCmdCode);
-            break;
-    }
-    
-    return;
 }
 
 /*==============================================================================
