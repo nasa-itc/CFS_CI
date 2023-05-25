@@ -12,6 +12,8 @@ include_directories(${MISSION_SOURCE_DIR}/apps/to/fsw/src)
 include_directories(${MISSION_SOURCE_DIR}/apps/io_lib/fsw/public_inc/)
 include_directories(${APPLICATION_PLATFORM_INC_LIST})
 
+include_directories(${MISSION_SOURCE_DIR}/../components/cryptolib/include)
+
 include_directories(fsw/examples/${CI_TRANSPORT})
 include_directories(${MISSION_SOURCE_DIR}/apps/to/fsw/examples/${TO_TRANSPORT})
 aux_source_directory(fsw/src APP_SRC_FILES)
