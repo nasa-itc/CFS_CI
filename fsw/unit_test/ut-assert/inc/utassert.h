@@ -10,8 +10,8 @@
  * Purpose: This file contains a standard set of asserts for use in unit tests.
  *
  * Design Notes: 
- *    - All asserts evaluate a expression as TRUE or FALSE to determine if a unit test has 
- *      passed or failed.  TRUE means the test passed, FALSE means the test failed.
+ *    - All asserts evaluate a expression as true or false to determine if a unit test has 
+ *      passed or failed.  true means the test passed, false means the test failed.
  *    - All asserts return a boolen result to indicate the pass fail status.
  *    - All asserts are implemented as macros to hide the __LINE__ and __FILE__ macros.
  *    - All asserts must call the function UtAssert.
@@ -37,17 +37,17 @@
  * Macro Definitions
  */
 
-/* Evaluates a expression as either TRUE or FALSE.  TRUE means the test passed, FALSE means the test failed. */
+/* Evaluates a expression as either true or false.  true means the test passed, false means the test failed. */
 #define     UtAssert_True(Expression, Description) \
                 UtAssert(Expression, Description, __FILE__, __LINE__)
 
-/* Evaluates a expression as either TRUE or FALSE.  TRUE means the test passed, FALSE means the test failed. */
+/* Evaluates a expression as either true or false.  true means the test passed, false means the test failed. */
 #define     UtAssert_Bool(Expression, Description) \
                 UtAssert(Expression, Description, __FILE__, __LINE__)
 
 /* Asserts a test failure */
 #define     UtAssert_Failed(Description) \
-                UtAssert(FALSE, Description, __FILE__, __LINE__)
+                UtAssert(false, Description, __FILE__, __LINE__)
 
 /* Compares two floating point numbers and determines if they are equal within a specified absolute tolerance. */
 #define     UtAssert_DoubleCmpAbs(x, y, Tolerance, Description) \
@@ -95,6 +95,6 @@ uint32      UtAssert_GetPassCount(void);
 uint32      UtAssert_GetFailCount(void);
 
 /* Base assert function.  All asserts must call this function. */
-boolean     UtAssert(boolean Expression, char *Description, char *File, uint32 Line);
+bool     UtAssert(bool Expression, char *Description, char *File, uint32 Line);
 
 #endif

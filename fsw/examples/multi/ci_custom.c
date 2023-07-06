@@ -91,7 +91,7 @@ static CI_CustomData_t g_CI_CustomData;
 */
 static int32 CI_CustomReadSerial(void);
 static int32 CI_CustomReadSocket(void);
-static void CI_CustomProcessUpMsg(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId);
+static void CI_CustomProcessUpMsg(CFE_MSG_Message_t * pSbMsg, CFE_SB_MsgId_t msgId);
 
 
 /*******************************************************************************
@@ -172,10 +172,10 @@ end_of_function:
 /******************************************************************************/
 /** \brief Custom app command response
 *******************************************************************************/
-int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
+int32 CI_CustomAppCmds(CFE_MSG_Message_t * pCmdMsg)
 {
     int32 iStatus = CI_SUCCESS;
-    uint32 uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
+    uint32 uiCmdCode = CFE_MSG_GetFcnCode(pCmdMsg, CFE_MSG_FcnCode_t *FcnCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command. Declare at top of file. 
@@ -183,7 +183,7 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
             if (CI_VerifyCmdLength(pCmdMsg, sizeof(CI_CustomExampleCmd_t)))
             {
                 CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                   "CI: Recvd example custom app cmd (%d)", uiCmdCode);
             }
             break;
@@ -201,22 +201,22 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
 /******************************************************************************/
 /** \brief Custom response to CI_ENABLE_TO_CC cmd code
 *******************************************************************************/
-void CI_CustomEnableTO(CFE_SB_MsgPtr_t pCmdMsg)
+void CI_CustomEnableTO(CFE_MSG_Message_t * pCmdMsg)
 {
     /* Copy the first part of the command (for socket setup) */
     CFE_PSP_MemCpy((void *) &g_CI_CustomData.toEnableCmd, 
                    (void *) pCmdMsg, sizeof(CI_EnableTOCmd_t));
 
     /* Setup the toEnableCmd */
-    CFE_SB_InitMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
-                   TO_APP_CMD_MID, sizeof(TO_EnableOutputCmd_t), FALSE); 
-    CFE_SB_SetCmdCode((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
+    CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
+                   TO_APP_CMD_MID, sizeof(TO_EnableOutputCmd_t), false); 
+    CFE_SB_SetCmdCode((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
                       TO_ENABLE_OUTPUT_CC);
     g_CI_CustomData.toEnableCmd.iFileDesc = g_CI_CustomData.serialFd;
-    CFE_SB_GenerateChecksum((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_SB_GenerateChecksum((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd);
     
     /* Send the TO Enable Telemetry Output Message */    
-    CFE_SB_SendMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_SB_TransmitMsg((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, true);
     
     return;
 }
@@ -246,7 +246,7 @@ void CI_CustomMain(void)
 
     if (g_CI_CustomData.serialFd < 0)
     {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR, 
+        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR, 
                           "CI: Serial Port not set. Check init. "
                           "Quitting CI_CustomMain.");
         goto end_of_function;
@@ -254,7 +254,7 @@ void CI_CustomMain(void)
 
     if (g_CI_CustomData.socket.sockId < 0)
     {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR, 
+        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR, 
                           "CI: Socket ID not set. Check init. "
                           "Quitting CI_CustomMain.");
         goto end_of_function;
@@ -279,7 +279,7 @@ void CI_CustomMain(void)
             }
             else 
             {
-                CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+                CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                                   "CI: Unexpected Active Device. "
                                   "Quitting CI_CustomMain.");
                 break;
@@ -300,7 +300,7 @@ int32 CI_CustomReadSerial(void)
     int32 msgSize = 0;
     int32 dataSize = 0;
     CFE_SB_MsgId_t  msgId;
-    CFE_SB_MsgPtr_t pSbMsg = (CFE_SB_MsgPtr_t) &g_CI_CustomData.buffer[0];
+    CFE_MSG_Message_t * pSbMsg = (CFE_MSG_Message_t *) &g_CI_CustomData.buffer[0];
     
     /* Get header of message. */
     int32 size = IO_TransRS422Read(g_CI_CustomData.serialFd, 
@@ -310,15 +310,15 @@ int32 CI_CustomReadSerial(void)
     if (size == 6)
     {
        /* Get Msg ID */
-       msgId = CFE_SB_GetMsgId(pSbMsg);
+       msgId = CFE_MSG_GetMsgId(pSbMsg, CFE_SB_MsgId_t *MsgId);
        
        /* Get message size */
-       msgSize = CFE_SB_GetTotalMsgLength(pSbMsg);
+       msgSize = CFE_MSG_GetSize(pSbMsg, CFE_MSG_Size_t *Size);
        dataSize = msgSize - 6;
 
        if (msgSize > CI_CUSTOM_BUFFER_SIZE)
        {
-           CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+           CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                              "CI: Message received larger than buffer. "
                              "Message ID:0x%x dropped.", msgId);
        }
@@ -330,7 +330,7 @@ int32 CI_CustomReadSerial(void)
 
            if (size != dataSize)
            {
-               CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+               CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                                  "CI: Incomplete message received. "
                                  "Message ID:0x%x dropped.", msgId);
            }
@@ -341,7 +341,7 @@ int32 CI_CustomReadSerial(void)
        }
        else
        {
-           CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+           CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                              "CI: Error on serial port read. errno:%d",
                              errno);
        }
@@ -361,7 +361,7 @@ int32 CI_CustomReadSerial(void)
 int32 CI_CustomReadSocket(void)
 {
     CFE_SB_MsgId_t  msgId;
-    CFE_SB_MsgPtr_t pSbMsg = (CFE_SB_MsgPtr_t) &g_CI_CustomData.buffer[0];
+    CFE_MSG_Message_t * pSbMsg = (CFE_MSG_Message_t *) &g_CI_CustomData.buffer[0];
     
     /* Get header of message. */
     int32 size = IO_TransUdpRcv(&g_CI_CustomData.socket, 
@@ -369,7 +369,7 @@ int32 CI_CustomReadSocket(void)
                                 CI_CUSTOM_BUFFER_SIZE); 
     if (size > 0)
     {
-        msgId = CFE_SB_GetMsgId(pSbMsg);
+        msgId = CFE_MSG_GetMsgId(pSbMsg, CFE_SB_MsgId_t *MsgId);
         CI_CustomProcessUpMsg(pSbMsg, msgId);
     }
 
@@ -380,16 +380,16 @@ int32 CI_CustomReadSocket(void)
 /******************************************************************************/
 /** \brief Custom Process Uplink Msg (Private)
 *******************************************************************************/
-void CI_CustomProcessUpMsg(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId)
+void CI_CustomProcessUpMsg(CFE_MSG_Message_t * pSbMsg, CFE_SB_MsgId_t msgId)
 {
      /* NOTE: Comment this out if you would like to test with cmdUtils tool,
         As it does not include a checksum in it's commands sent. */
      
      /* CCSDS command checksum check. */
-     if (CFE_SB_ValidateChecksum(pSbMsg) == FALSE)
+     if (CFE_SB_ValidateChecksum(pSbMsg) == false)
      {
-         uint16 cmdCode = CFE_SB_GetCmdCode(pSbMsg);
-         CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
+         uint16 cmdCode = CFE_MSG_GetFcnCode(pSbMsg, CFE_MSG_FcnCode_t *FcnCode);
+         CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                            "CI: MID:0x%04x - Cmd Checksum failed. CmdCode:%u",
                            msgId, cmdCode);
          return;
@@ -403,7 +403,7 @@ void CI_CustomProcessUpMsg(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId)
      /* Any other message is passed through to the SB. */
      else 
      {
-         CFE_SB_SendMsg(pSbMsg);
+         CFE_SB_TransmitMsg(pSbMsg, true);
      }
 
     return;
@@ -412,11 +412,11 @@ void CI_CustomProcessUpMsg(CFE_SB_MsgPtr_t pSbMsg, CFE_SB_MsgId_t msgId)
 /******************************************************************************/
 /** \brief Custom Gate command response
 *******************************************************************************/
-void CI_CustomGateCmds(CFE_SB_MsgPtr_t pCmdMsg)
+void CI_CustomGateCmds(CFE_MSG_Message_t * pCmdMsg)
 {
     uint32 uiCmdCode = 0;
 
-    uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
+    uiCmdCode = CFE_MSG_GetFcnCode(pCmdMsg, CFE_MSG_FcnCode_t *FcnCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command.
@@ -424,7 +424,7 @@ void CI_CustomGateCmds(CFE_SB_MsgPtr_t pCmdMsg)
             if (CI_VerifyCmdLength(pCmdMsg, sizeof(CI_CustomExampleCmd_t)))
             {
                 CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                   "CI: Recvd example custom gate cmd (%d)", uiCmdCode);
             }
             break;
@@ -432,7 +432,7 @@ void CI_CustomGateCmds(CFE_SB_MsgPtr_t pCmdMsg)
 
         default:
             CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
-            CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
+            CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                               "CI: Recvd invalid Gate cmd (%d)", uiCmdCode);
             break;
     }

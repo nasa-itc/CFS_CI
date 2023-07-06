@@ -38,7 +38,7 @@
 typedef struct {
     char                PipeName[OS_MAX_API_NAME];
     UtListHead_t        MsgQueue;
-    boolean             InUse;
+    bool             InUse;
 } Ut_CFE_SB_PipeTableEntry_t;
 
 UtListHead_t                MsgQueue;
@@ -57,13 +57,13 @@ uint32 Ut_CFE_SB_GetMsgQueueDepth(void)
 uint32 Ut_CFE_SB_GetMsgCount(uint16 MessageID)
 {
     UtListNode_t        *CurrentNode;
-    CFE_SB_Msg_t        *MessagePtr;
+    CFE_MSG_Message_t        *MessagePtr;
     uint32               MessageCount = 0;
 
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_SB_GetMsgId(MessagePtr)) {
+        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
             MessageCount++;
         }
         CurrentNode = CurrentNode->Next;
@@ -71,41 +71,41 @@ uint32 Ut_CFE_SB_GetMsgCount(uint16 MessageID)
     return(MessageCount);
 }
 
-int32 Ut_CFE_SB_SendMsgHook(CFE_SB_Msg_t *MsgPtr)
+int32 Ut_CFE_SB_TransmitMsgHook(CFE_MSG_Message_t *MsgPtr)
 {
-    UtList_Add(&MsgQueue, MsgPtr, CFE_SB_GetTotalMsgLength(MsgPtr), 0);
+    UtList_Add(&MsgQueue, MsgPtr, CFE_MSG_GetSize(MsgPtr), 0, CFE_MSG_Size_t *Size);
 
     UtPrintf("PKT: ");
-    UtPrintx(MsgPtr, (uint16)(CFE_SB_GetTotalMsgLength(MsgPtr)));
+    UtPrintx(MsgPtr, (uint16)(CFE_MSG_GetSize(MsgPtr)), CFE_MSG_Size_t *Size);
     return CFE_SUCCESS;
 }
 
-boolean Ut_CFE_SB_PacketSent(uint16 MessageID)
+bool Ut_CFE_SB_PacketSent(uint16 MessageID)
 {
     UtListNode_t        *CurrentNode;
-    CFE_SB_Msg_t        *MessagePtr;
+    CFE_MSG_Message_t        *MessagePtr;
 
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_SB_GetMsgId(MessagePtr)) {
-            return(TRUE);
+        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
+            return(true);
         }
         CurrentNode = CurrentNode->Next;
     }
-    return(FALSE);
+    return(false);
 }
 
 void *Ut_CFE_SB_FindPacket(uint16 MessageID, uint32 MessageNumber)
 {
     UtListNode_t        *CurrentNode;
-    CFE_SB_Msg_t        *MessagePtr;
+    CFE_MSG_Message_t        *MessagePtr;
     uint32               MessageCount = 0;
 
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_SB_GetMsgId(MessagePtr)) {
+        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
             MessageCount++;
             if (MessageCount == MessageNumber) {
                 return(CurrentNode->Data);
@@ -121,7 +121,7 @@ void Ut_CFE_SB_ClearPipes(void)
     uint32          i;
 
     for (i=0; i < UT_CFE_SB_MAX_PIPES; i++) {
-        if (PipeTable[i].InUse == TRUE) {
+        if (PipeTable[i].InUse == true) {
             UtList_Reset(&PipeTable[i].MsgQueue);
         }
     }
@@ -133,9 +133,9 @@ int32 Ut_CFE_SB_CreatePipe(char *PipeName)
     uint32          i;
 
     for (i=0; i < UT_CFE_SB_MAX_PIPES; i++) {
-        if (PipeTable[i].InUse == FALSE) {
+        if (PipeTable[i].InUse == false) {
             strncpy(PipeTable[i].PipeName, PipeName, OS_MAX_API_NAME);
-            PipeTable[i].InUse = TRUE;
+            PipeTable[i].InUse = true;
             return(i);
         }
     }
@@ -152,7 +152,7 @@ int32 Ut_CFE_SB_FindPipe(char *PipeName)
     uint32          i;
 
     for (i=0; i < UT_CFE_SB_MAX_PIPES; i++) {
-        if ((PipeTable[i].InUse == TRUE) &&
+        if ((PipeTable[i].InUse == true) &&
             (strncmp(PipeTable[i].PipeName, PipeName, strlen(PipeName)) == 0)) {
             return(i);
         }
@@ -162,8 +162,8 @@ int32 Ut_CFE_SB_FindPipe(char *PipeName)
 
 void Ut_CFE_SB_AddMsgToPipe(void *MsgPtr, CFE_SB_PipeId_t PipeId)
 {
-    if (PipeTable[PipeId].InUse == TRUE) {
-        UtList_Add(&PipeTable[PipeId].MsgQueue, MsgPtr, CFE_SB_GetTotalMsgLength((CFE_SB_MsgPtr_t)MsgPtr), 0);
+    if (PipeTable[PipeId].InUse == true) {
+        UtList_Add(&PipeTable[PipeId].MsgQueue, MsgPtr, CFE_MSG_GetSize((CFE_MSG_Message_t *)MsgPtr), 0, CFE_MSG_Size_t *Size);
     }
     else {
         printf("Error - Invalid PipeId\n");
@@ -181,23 +181,23 @@ int32 Ut_CFE_SB_CreatePipeHook(CFE_SB_PipeId_t *PipeIdPtr, uint16  Depth, char *
     return(CFE_SUCCESS);
 }
 
-int32 Ut_CFE_SB_RcvMsgHook(CFE_SB_MsgPtr_t *BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut)
+int32 Ut_CFE_SB_ReceiveBufferHook(CFE_MSG_Message_t * *BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut)
 {
     UtListNode_t        *CurrentNode;
 
-    if (PipeTable[PipeId].InUse == TRUE) {
+    if (PipeTable[PipeId].InUse == true) {
 
-        if (UtList_IsEmpty(&PipeTable[PipeId].MsgQueue) == FALSE) {
+        if (UtList_IsEmpty(&PipeTable[PipeId].MsgQueue) == false) {
 
             CurrentNode = UtList_First(&PipeTable[PipeId].MsgQueue);
-            if (CurrentNode->Tag == TRUE) {         /* Indicates buffer is in use */
+            if (CurrentNode->Tag == true) {         /* Indicates buffer is in use */
                 UtList_DeleteFirst(&PipeTable[PipeId].MsgQueue);
             }
 
-            if (UtList_IsEmpty(&PipeTable[PipeId].MsgQueue) == FALSE) {
+            if (UtList_IsEmpty(&PipeTable[PipeId].MsgQueue) == false) {
 
                 CurrentNode = UtList_First(&PipeTable[PipeId].MsgQueue);
-                CurrentNode->Tag = TRUE;            /* Indicates buffer is in use */
+                CurrentNode->Tag = true;            /* Indicates buffer is in use */
                *BufPtr = CurrentNode->Data;
                 return(CFE_SUCCESS);
             }
@@ -216,14 +216,14 @@ int32 Ut_CFE_SB_RcvMsgHook(CFE_SB_MsgPtr_t *BufPtr, CFE_SB_PipeId_t PipeId, int3
     }
 }
 
-void Ut_CFE_SB_InitMsgHook(void *MsgPtr, CFE_SB_MsgId_t MsgId, uint16 Length, boolean Clear)
+void Ut_CFE_MSG_InitHook(void *MsgPtr, CFE_SB_MsgId_t MsgId, uint16 Length, bool Clear)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
     CCSDS_InitPkt ((CCSDS_PriHdr_t *)MsgPtr,(uint16)MsgId,Length,Clear);
 
 #endif
-} /* end Ut_CFE_SB_InitMsgHook */
+} /* end Ut_CFE_MSG_InitHook */
 
 uint16 Ut_CFE_SB_MsgHdrSizeHook(CFE_SB_MsgId_t MsgId)
 {
@@ -240,11 +240,11 @@ uint16 Ut_CFE_SB_MsgHdrSizeHook(CFE_SB_MsgId_t MsgId)
 
 	  }else if(CCSDS_RD_TYPE(CCSDSPriHdr) == CCSDS_CMD){
 
-        size = CFE_SB_CMD_HDR_SIZE;
+        size = sizeof(CFE_MSG_CommandHeader_t);
 
 	  }else{
 
-        size = CFE_SB_TLM_HDR_SIZE;
+        size = sizeof(CFE_MSG_TelemetryHeader_t);
 	  }
 
     return size;
@@ -252,7 +252,7 @@ uint16 Ut_CFE_SB_MsgHdrSizeHook(CFE_SB_MsgId_t MsgId)
 #endif
 }/* end Ut_CFE_SB_MsgHdrSizeHook */
 
-void *Ut_CFE_SB_GetUserDataHook(CFE_SB_MsgPtr_t MsgPtr)
+void *Ut_CFE_SB_GetUserDataHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
     uint8           *BytePtr;
@@ -260,23 +260,23 @@ void *Ut_CFE_SB_GetUserDataHook(CFE_SB_MsgPtr_t MsgPtr)
     uint16          HdrSize;
 
     BytePtr = (uint8 *)MsgPtr;
-    MsgId   = CFE_SB_GetMsgId(MsgPtr);
+    MsgId   = CFE_MSG_GetMsgId(MsgPtr, CFE_SB_MsgId_t *MsgId);
     HdrSize = CFE_SB_MsgHdrSize(MsgId);
 
     return (BytePtr + HdrSize);
 #endif
 }/* end Ut_CFE_SB_GetUserDataHook */
 
-CFE_SB_MsgId_t Ut_CFE_SB_GetMsgIdHook(CFE_SB_MsgPtr_t MsgPtr)
+CFE_SB_MsgId_t Ut_CFE_SB_GetMsgIdHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
-    return CCSDS_RD_SID(MsgPtr->Hdr);
+    return CFE_MSG_GetMsgId(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t *MsgId);
 
 #endif
 }/* end Ut_CFE_SB_GetMsgIdHook */
 
-void Ut_CFE_SB_SetMsgIdHook(CFE_SB_MsgPtr_t MsgPtr,
+void Ut_CFE_MSG_SetMsgIdHook(CFE_MSG_Message_t * MsgPtr,
                      CFE_SB_MsgId_t MsgId)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
@@ -284,33 +284,33 @@ void Ut_CFE_SB_SetMsgIdHook(CFE_SB_MsgPtr_t MsgPtr,
     CCSDS_WR_SID(MsgPtr->Hdr,MsgId);
 
 #endif
-}/* end Ut_CFE_SB_SetMsgIdHook */
+}/* end Ut_CFE_MSG_SetMsgIdHook */
 
-uint16 Ut_CFE_SB_GetUserDataLengthHook(CFE_SB_MsgPtr_t MsgPtr)
+uint16 Ut_CFE_SB_GetUserDataLengthHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
     uint16 TotalMsgSize;
     uint16 HdrSize;
 
     CFE_SB_MsgId_t MsgId;
-    MsgId = CFE_SB_GetMsgId(MsgPtr);
+    MsgId = CFE_MSG_GetMsgId(MsgPtr, CFE_SB_MsgId_t *MsgId);
 
-    TotalMsgSize = CFE_SB_GetTotalMsgLength(MsgPtr);
+    TotalMsgSize = CFE_MSG_GetSize(MsgPtr, CFE_MSG_Size_t *Size);
     HdrSize = CFE_SB_MsgHdrSize(MsgId);
 
     return (TotalMsgSize - HdrSize);
 #endif
 }/* end Ut_CFE_SB_GetUserDataLengthHook */
 
-void Ut_CFE_SB_SetUserDataLengthHook(CFE_SB_MsgPtr_t MsgPtr,uint16 DataLength)
+void Ut_CFE_SB_SetUserDataLengthHook(CFE_MSG_Message_t * MsgPtr,uint16 DataLength)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
     uint32 TotalMsgSize, HdrSize;
     CFE_SB_MsgId_t MsgId;
-    MsgId = CFE_SB_GetMsgId(MsgPtr);
+    MsgId = CFE_MSG_GetMsgId(MsgPtr, CFE_SB_MsgId_t *MsgId);
 
-    TotalMsgSize = CFE_SB_GetTotalMsgLength(MsgPtr);
+    TotalMsgSize = CFE_MSG_GetSize(MsgPtr, CFE_MSG_Size_t *Size);
     HdrSize = CFE_SB_MsgHdrSize(MsgId);
 
     TotalMsgSize = HdrSize + DataLength;
@@ -320,16 +320,16 @@ void Ut_CFE_SB_SetUserDataLengthHook(CFE_SB_MsgPtr_t MsgPtr,uint16 DataLength)
 #endif
 }/* end Ut_CFE_SB_SetUserDataLengthHook */
 
-uint16 Ut_CFE_SB_GetTotalMsgLengthHook(CFE_SB_MsgPtr_t MsgPtr)
+uint16 Ut_CFE_SB_GetTotalMsgLengthHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
-    return CCSDS_RD_LEN(MsgPtr->Hdr);
+    return CFE_MSG_GetSize(CFE_MSG_Message_t *MsgPtr, CFE_MSG_Size_t *Size);
 
 #endif
 }/* end Ut_CFE_SB_GetTotalMsgLengthHook */
 
-void Ut_CFE_SB_SetTotalMsgLengthHook(CFE_SB_MsgPtr_t MsgPtr,uint16 TotalLength)
+void Ut_CFE_SB_SetTotalMsgLengthHook(CFE_MSG_Message_t * MsgPtr,uint16 TotalLength)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -338,7 +338,7 @@ void Ut_CFE_SB_SetTotalMsgLengthHook(CFE_SB_MsgPtr_t MsgPtr,uint16 TotalLength)
 #endif
 }/* end Ut_CFE_SB_SetTotalMsgLengthHook */
 
-CFE_TIME_SysTime_t Ut_CFE_SB_GetMsgTimeHook(CFE_SB_MsgPtr_t MsgPtr)
+CFE_TIME_SysTime_t Ut_CFE_SB_GetMsgTimeHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -365,7 +365,7 @@ CFE_TIME_SysTime_t Ut_CFE_SB_GetMsgTimeHook(CFE_SB_MsgPtr_t MsgPtr)
 #endif
 }/* end Ut_CFE_SB_GetMsgTimeHook */
 
-int32 Ut_CFE_SB_SetMsgTimeHook(CFE_SB_MsgPtr_t MsgPtr,
+int32 Ut_CFE_MSG_SetMsgTimeHook(CFE_MSG_Message_t * MsgPtr,
                        CFE_TIME_SysTime_t Time)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
@@ -385,16 +385,16 @@ int32 Ut_CFE_SB_SetMsgTimeHook(CFE_SB_MsgPtr_t MsgPtr,
     return CFE_SUCCESS;
 
 #endif
-}/* end Ut_CFE_SB_SetMsgTimeHook */
+}/* end Ut_CFE_MSG_SetMsgTimeHook */
 
 //FIXME - not sure what to do about this yet, want to avoid any dependencies on other api functions if possible.
-//void Ut_CFE_SB_TimeStampMsgHook(CFE_SB_MsgPtr_t MsgPtr)
+//void Ut_CFE_SB_TimeStampMsgHook(CFE_MSG_Message_t * MsgPtr)
 //{
-//    CFE_SB_SetMsgTime(MsgPtr,CFE_TIME_GetTime());
+//    CFE_MSG_SetMsgTime(MsgPtr,CFE_TIME_GetTime());
 //
 //}/* end Ut_CFE_SB_TimeStampMsgHook */
 
-uint16 Ut_CFE_SB_GetCmdCodeHook(CFE_SB_MsgPtr_t MsgPtr)
+uint16 Ut_CFE_SB_GetCmdCodeHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -413,7 +413,7 @@ uint16 Ut_CFE_SB_GetCmdCodeHook(CFE_SB_MsgPtr_t MsgPtr)
 #endif
 }/* end Ut_CFE_SB_GetCmdCodeHook */
 
-int32 Ut_CFE_SB_SetCmdCodeHook(CFE_SB_MsgPtr_t MsgPtr,
+int32 Ut_CFE_SB_SetCmdCodeHook(CFE_MSG_Message_t * MsgPtr,
                       uint16 CmdCode)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
@@ -436,7 +436,7 @@ int32 Ut_CFE_SB_SetCmdCodeHook(CFE_SB_MsgPtr_t MsgPtr,
 
 }/* end Ut_CFE_SB_SetCmdCodeHook */
 
-uint16 Ut_CFE_SB_GetChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
+uint16 Ut_CFE_SB_GetChecksumHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -455,7 +455,7 @@ uint16 Ut_CFE_SB_GetChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
 #endif
 }/* end Ut_CFE_SB_GetChecksumHook */
 
-void Ut_CFE_SB_GenerateChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
+void Ut_CFE_SB_GenerateChecksumHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -473,7 +473,7 @@ void Ut_CFE_SB_GenerateChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
 #endif
 }/* end Ut_CFE_SB_GenerateChecksumHook */
 
-boolean Ut_CFE_SB_ValidateChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
+bool Ut_CFE_SB_ValidateChecksumHook(CFE_MSG_Message_t * MsgPtr)
 {
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
@@ -481,7 +481,7 @@ boolean Ut_CFE_SB_ValidateChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
 
     /* if msg type is telemetry or there is no secondary hdr... */
     if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
-        return FALSE;
+        return false;
     }/* end if */
 
     CmdPktPtr = (CCSDS_CmdPkt_t *)MsgPtr;
@@ -494,7 +494,7 @@ boolean Ut_CFE_SB_ValidateChecksumHook(CFE_SB_MsgPtr_t MsgPtr)
 void CCSDS_InitPkt (CCSDS_PriHdr_t  *PktPtr,
                     uint16           StreamId,
                     uint16           Length,
-                    boolean          Clear )
+                    bool          Clear )
 {
    uint16     SeqCount;
 
@@ -529,7 +529,7 @@ void CCSDS_LoadCheckSum (CCSDS_CmdPkt_t *PktPtr)
 
 } /* END CCSDS_LoadCheckSum() */
 
-boolean CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
+bool CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
 {
 
    return (CCSDS_ComputeCheckSum(PktPtr) == 0);
@@ -538,7 +538,7 @@ boolean CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
 
 uint8 CCSDS_ComputeCheckSum (CCSDS_CmdPkt_t *PktPtr)
 {
-   uint16   PktLen   = CCSDS_RD_LEN(PktPtr->PriHdr);
+   uint16   PktLen   = CFE_MSG_GetSize(CFE_MSG_Message_t *MsgPtr, CFE_MSG_Size_t *Size);
    uint8   *BytePtr  = (uint8 *)PktPtr;
    uint8    CheckSum;
 

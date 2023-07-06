@@ -36,13 +36,13 @@
 
 /* Copies a region of memory to a binary file.  This file can be reloaded by calling UtBinFile2Mem or it can be
  * used to verify test results by calling UtMem2BinFileCmp. */
-boolean             UtMem2BinFile(void *Memory, char *Filename, uint32 Length);
+bool             UtMem2BinFile(void *Memory, char *Filename, uint32 Length);
 
 /* Copies a binary file to a region of memory. */
-boolean             UtBinFile2Mem(void *Memory, char *Filename, uint32 Length);
+bool             UtBinFile2Mem(void *Memory, char *Filename, uint32 Length);
 
 /* Copies a region of memory to a hex file */
-boolean             UtMem2HexFile(void *Memory, char *Filename, uint32 Length);
+bool             UtMem2HexFile(void *Memory, char *Filename, uint32 Length);
 
 /* Fills a region of memory with a byte count pattern. */
 void                UtMemFill(void *Memory, uint32 Length);
@@ -60,15 +60,15 @@ void                UtPrintx(void *Memory, uint32 Length);
 
 /* Compares a region of memory to a static pattern and determines if they are equal.  Note: Use UtMemSet to
  * fill a region of memory with a static pattern. */
-boolean             UtMemCmpValue(void *Memory, uint8 Value, uint32 Length);
+bool             UtMemCmpValue(void *Memory, uint8 Value, uint32 Length);
 
 /* Compares a region of memory to a byte count pattern and determines if they are equal.  Note: Use UtMemFill to
  * fill a region of memory with a byte count pattern. */
-boolean             UtMemCmpCount(void *Memory, uint32 Length);
+bool             UtMemCmpCount(void *Memory, uint32 Length);
 
 /* Compares a region of memory with the contents of a binary file and determines if they are equal.  Note: Use
  * UtMem2BinFile to copy a region of memory to a binary file. */
-boolean             UtMem2BinFileCmp(void *Memory, char *Filename);
+bool             UtMem2BinFileCmp(void *Memory, char *Filename);
 
 #endif
 

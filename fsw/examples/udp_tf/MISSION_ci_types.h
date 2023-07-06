@@ -52,12 +52,12 @@ extern "C" {
 */
 typedef struct
 {
-    uint8  ucCmdHeader[CFE_SB_CMD_HDR_SIZE];
+    CFE_MSG_CommandHeader_t  ucCmdHeader;
 } CI_NoArgCmd_t;
 
 typedef struct
 {
-    uint8	ucCmdHeader[CFE_SB_CMD_HDR_SIZE];
+    CFE_MSG_CommandHeader_t  ucCmdHeader;
     char    cDestIp[TO_MAX_IP_STRING_SIZE];   /* Destination Socket IP */	
     uint16  usDestPort;                       /* Destination Socket Port */ 
 } CI_EnableTOCmd_t;
@@ -65,7 +65,7 @@ typedef struct
 
 typedef struct
 {
-    uint8       ucTlmHeader[CFE_SB_TLM_HDR_SIZE];
+    CFE_MSG_TelemetryHeader_t  ucTlmHeader;
 } CI_OutData_t;
 
 
