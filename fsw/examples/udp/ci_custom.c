@@ -126,7 +126,8 @@ end_of_function:
 int32 CI_CustomAppCmds(CFE_MSG_Message_t * cmdMsgPtr)
 {
     int32 iStatus = CI_SUCCESS;
-    uint32 uiCmdCode = CFE_MSG_GetFcnCode(cmdMsgPtr, CFE_MSG_FcnCode_t *FcnCode);
+    CFE_MSG_FcnCode_t uiCmdCode = 0;
+    CFE_MSG_GetFcnCode(cmdMsgPtr, &uiCmdCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command. Declare at top of file. 
@@ -159,11 +160,11 @@ void CI_CustomEnableTO(CFE_MSG_Message_t * cmdMsgPtr)
                    (void *) cmdMsgPtr, sizeof(TO_EnableOutputCmd_t));
 
     /* Setup the toEnableCmd */
-    CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
-                   TO_APP_CMD_MID, sizeof(TO_EnableOutputCmd_t), false); 
-    CFE_SB_SetCmdCode((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
+    CFE_MSG_Init(CFE_MSG_PTR(g_CI_CustomData.toEnableCmd.ucCmdHeader), 
+                   CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_EnableOutputCmd_t)); 
+    CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
                       TO_ENABLE_OUTPUT_CC);
-    CFE_SB_GenerateChecksum((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd);
+    CFE_MSG_GenerateChecksum((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd);
 
     /* Send the TO Enable Telemetry Output Message */    
     CFE_SB_TransmitMsg((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, true);
@@ -213,7 +214,7 @@ void CI_CustomMain(void)
         if (size > 0)
         {
             /* Get Msg ID */
-            msgId = CFE_MSG_GetMsgId(sbMsg, CFE_SB_MsgId_t *MsgId);
+            CFE_MSG_GetMsgId(sbMsg, &msgId);
 
             /* NOTE: For this simple UDP example, the Checksum validation is 
                not included as to be able to test with cmdUtils tool. */
@@ -231,7 +232,7 @@ void CI_CustomMain(void)
             */
 
             /* If command is GATE command, execute immediately. */
-            if (msgId == CI_GATE_CMD_MID)
+            if (CFE_SB_MsgIdToValue(msgId) == CI_GATE_CMD_MID)
             {
                 CI_CustomGateCmds(sbMsg);
             }
@@ -259,9 +260,9 @@ void CI_CustomMain(void)
 *******************************************************************************/
 void CI_CustomGateCmds(CFE_MSG_Message_t * cmdMsgPtr)
 {
-    uint32 uiCmdCode = 0;
+    CFE_MSG_FcnCode_t uiCmdCode = 0;
 
-    uiCmdCode = CFE_MSG_GetFcnCode(cmdMsgPtr, CFE_MSG_FcnCode_t *FcnCode);
+    CFE_MSG_GetFcnCode(cmdMsgPtr, &uiCmdCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command.
