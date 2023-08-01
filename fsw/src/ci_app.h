@@ -267,7 +267,7 @@ int32  CI_InitData(void);
 *
 *   \returns
 *   \retcode #CFE_SUCCESS \retdesc \copydoc CFE_SUCCESS \endcode
-*   \retstmt Any of the error codes from #CFE_SB_RcvMsg \endstmt
+*   \retstmt Any of the error codes from #CFE_SB_ReceiveBuffer \endstmt
 *
 *   \see 
 *       #CI_AppMain
@@ -323,7 +323,7 @@ void  CI_ProcessNewCmds(void);
 *       #CI_CustomEnableTO
 *       #CI_CustomAppCmds
 *******************************************************************************/
-void  CI_ProcessNewAppCmds(CFE_SB_Msg_t*);
+void  CI_ProcessNewAppCmds(CFE_MSG_Message_t*);
 
 /******************************************************************************/
 /** \brief Report Housekeeping Packet
@@ -437,7 +437,7 @@ void CI_IncrHkCounter(uint16 * counter);
 *       #CI_CustomAppCmds
 *       #CI_CustomGateCmds
 *******************************************************************************/
-boolean  CI_VerifyCmdLength(CFE_SB_Msg_t*, uint16);
+bool  CI_VerifyCmdLength(CFE_MSG_Message_t*, uint16);
 
 
 /*******************************************************************************
@@ -510,7 +510,7 @@ int32 CI_CustomInit(void);
 *       #CI_CustomGateCmds
 *       #CFE_SB_ValidateChecksum
 *       #CFE_SB_GetMsgId
-*       #CFE_SB_SendMsg
+*       #CFE_SB_TransmitMsg
 *******************************************************************************/
 void  CI_CustomMain(void);
 
@@ -541,7 +541,7 @@ void  CI_CustomMain(void);
 *       #CI_VerifyCmdLength
 *       #CFE_SB_GetCmdCode
 *******************************************************************************/
-void  CI_CustomGateCmds(CFE_SB_Msg_t *);
+void  CI_CustomGateCmds(CFE_MSG_Message_t *);
 
 /******************************************************************************/
 /** \brief Process of custom app commands by main task
@@ -573,7 +573,7 @@ void  CI_CustomGateCmds(CFE_SB_Msg_t *);
 *       #CI_VerifyCmdLength
 *       #CFE_SB_GetCmdCode
 *******************************************************************************/
-int32 CI_CustomAppCmds(CFE_SB_Msg_t *pCmdMsg);
+int32 CI_CustomAppCmds(CFE_MSG_Message_t *pCmdMsg);
 
 /******************************************************************************/
 /** \brief Custom response to the Enable TO command
@@ -607,12 +607,12 @@ int32 CI_CustomAppCmds(CFE_SB_Msg_t *pCmdMsg);
 *
 *   \see 
 *       #CI_ProcessNewAppCmds
-*       #CFE_SB_SetMsgId
+*       #CFE_MSG_SetMsgId
 *       #CFE_SB_SetCmdCode
 *       #CFE_SB_GenerateChecksum
-*       #CFE_SB_SendMsg
+*       #CFE_SB_TransmitMsg
 *******************************************************************************/
-void  CI_CustomEnableTO(CFE_SB_Msg_t *pCmdMsg);
+void  CI_CustomEnableTO(CFE_MSG_Message_t *pCmdMsg);
 
 /******************************************************************************/
 /** \brief Custom Cleanup 

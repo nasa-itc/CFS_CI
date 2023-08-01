@@ -35,15 +35,15 @@ void Ut_CI_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
 }
 
 
-boolean Ut_CI_UseReturnCode(uint32 Index)
+bool Ut_CI_UseReturnCode(uint32 Index)
 {
     if (Ut_CI_ReturnCodeTable[Index].Count > 0) {
         Ut_CI_ReturnCodeTable[Index].Count--;
         if (Ut_CI_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 
@@ -58,15 +58,15 @@ int32 CI_CustomInit(void)
 }
 
 
-int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
+int32 CI_CustomAppCmds(CFE_MSG_Message_t * pCmdMsg)
 {
-    uint32 uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
+    uint32 uiCmdCode = CFE_MSG_GetFcnCode(pCmdMsg, CFE_MSG_FcnCode_t *FcnCode);
 
     if (Ut_CI_UseReturnCode(UT_CI_CUSTOMAPPCMDS_INDEX))
         return Ut_CI_ReturnCodeTable[UT_CI_CUSTOMAPPCMDS_INDEX].Value;
 
     CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                       "Received Custom Cmd (%d)",
                       uiCmdCode);
     
@@ -74,7 +74,7 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
 }
 
 
-void CI_CustomEnableTO(CFE_SB_MsgPtr_t pCmdMsg)
+void CI_CustomEnableTO(CFE_MSG_Message_t * pCmdMsg)
 {
     return;
 }

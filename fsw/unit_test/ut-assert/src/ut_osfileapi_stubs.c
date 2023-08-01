@@ -27,7 +27,7 @@
 ** Revision 1.3 2011/03/23 17:18:08EDT rmcgraw
 ** correct OS_read return value
 ** Revision 1.2 2011/03/23 17:08:19EDT rmcgraw
-** OS_FS_ERROR to OS_FS_SUCCESS for some OS file sys apis
+** OS_ERROR to OS_SUCCESS for some OS file sys apis
 ** Revision 1.1 2011/02/15 11:13:05EST sslegel
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/FSW-TOOLS-REPOSITORY/ut-assert/src/project.pj
@@ -73,15 +73,15 @@ void Ut_OSFILEAPI_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_OSFILEAPI_UseReturnCode(uint32 Index)
+bool Ut_OSFILEAPI_UseReturnCode(uint32 Index)
 {
     if (Ut_OSFILEAPI_ReturnCodeTable[Index].Count > 0) {
         Ut_OSFILEAPI_ReturnCodeTable[Index].Count--;
         if (Ut_OSFILEAPI_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 /*
@@ -98,7 +98,7 @@ int32 OS_creat  (const char *path, int32  access)
     if (Ut_OSFILEAPI_HookTable.OS_creat)
         return Ut_OSFILEAPI_HookTable.OS_creat(path, access);
 
-    return OS_FS_ERROR;
+    return OS_ERROR;
 }
 
 int32 OS_open   (const char *path,  int32 access,  uint32  mode)
@@ -109,9 +109,9 @@ int32 OS_open   (const char *path,  int32 access,  uint32  mode)
 
     /* Check for Function Hook */
     if (Ut_OSFILEAPI_HookTable.OS_open)
-        return Ut_OSFILEAPI_HookTable.OS_open(path, access, mode);
+        return Ut_OSFILEAPI_HookTable.OS_OpenCreate(osal_id_t *filedes, path, OS_FILE_FLAG_NONE,  access);
 
-    return OS_FS_ERROR;
+    return OS_ERROR;
 }
 
 int32 OS_close (int32  filedes)
@@ -124,7 +124,7 @@ int32 OS_close (int32  filedes)
     if (Ut_OSFILEAPI_HookTable.OS_close)
         return Ut_OSFILEAPI_HookTable.OS_close(filedes);
 
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_read  (int32  filedes, void *buffer, uint32 nbytes)
@@ -137,7 +137,7 @@ int32 OS_read  (int32  filedes, void *buffer, uint32 nbytes)
     if (Ut_OSFILEAPI_HookTable.OS_read)
         return Ut_OSFILEAPI_HookTable.OS_read(filedes, buffer, nbytes);
 
-    return OS_FS_ERROR;
+    return OS_ERROR;
 }
 
 int32 OS_write (int32  filedes, void *buffer, uint32 nbytes)
@@ -155,7 +155,7 @@ int32 OS_write (int32  filedes, void *buffer, uint32 nbytes)
 
 int32 OS_chmod  (const char *path, uint32 access)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_stat   (const char *path, os_fstat_t *filestats)
@@ -168,32 +168,32 @@ int32 OS_stat   (const char *path, os_fstat_t *filestats)
     if (Ut_OSFILEAPI_HookTable.OS_stat)
         return Ut_OSFILEAPI_HookTable.OS_stat(path, filestats);
 
-    return OS_FS_ERROR;
+    return OS_ERROR;
 }
 
 int32 OS_lseek  (int32  filedes, int32 offset, uint32 whence)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_remove (const char *path)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_rename (const char *old, const char *new)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_cp (const char *src, const char *dest)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_mv (const char *src, const char *dest)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 /*
@@ -202,7 +202,7 @@ int32 OS_mv (const char *src, const char *dest)
 
 int32 OS_mkdir (const char *path, uint32 access)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 os_dirp_t OS_opendir (const char *path)
@@ -228,7 +228,7 @@ int32 OS_closedir (os_dirp_t directory)
     if (Ut_OSFILEAPI_HookTable.OS_closedir)
         return Ut_OSFILEAPI_HookTable.OS_closedir(directory);
 
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 os_dirent_t *  OS_readdir (os_dirp_t directory)
@@ -246,17 +246,17 @@ os_dirent_t *  OS_readdir (os_dirp_t directory)
 
 int32  OS_rmdir (const char *path)
 {
-    return OS_FS_ERROR;
+    return OS_ERROR;
 }
 
 int32 OS_check_name_length(const char *path)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_ShellOutputToFile(char* Cmd, int32 OS_fd)
 {
-    return OS_FS_SUCCESS;
+    return OS_SUCCESS;
 }
 
 int32 OS_FDGetInfo (int32 filedes, OS_FDTableEntry *fd_prop)

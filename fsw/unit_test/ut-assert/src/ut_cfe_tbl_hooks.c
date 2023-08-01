@@ -42,8 +42,8 @@
 #define UT_CFE_TBL_MAX_TABLES   32
 
 typedef struct {
-    boolean                     InUse;
-    boolean                     TblUpdatedFlag;
+    bool                     InUse;
+    bool                     TblUpdatedFlag;
     void                       *Buffer;
     char                        Name[CFE_TBL_MAX_FULL_NAME_LEN];
     uint32                      Size;
@@ -52,7 +52,7 @@ typedef struct {
 } Ut_CFE_TBL_Registry_t;
 
 typedef struct {
-    boolean                     InUse;
+    bool                     InUse;
     char                        Filename[OS_MAX_PATH_LEN];
     void                       *TablePtr;
 } Ut_CFE_TBL_Images_t;
@@ -65,9 +65,9 @@ int32 Ut_CFE_TBL_RegisterTable(const char *Name, uint32 Size, uint16 TblOptionFl
     uint32          i;
 
     for (i=0; i < UT_CFE_TBL_MAX_TABLES; i++) {
-        if (Ut_CFE_TBL_Registry[i].InUse == FALSE) {
-            Ut_CFE_TBL_Registry[i].InUse = TRUE;
-            Ut_CFE_TBL_Registry[i].TblUpdatedFlag = FALSE;
+        if (Ut_CFE_TBL_Registry[i].InUse == false) {
+            Ut_CFE_TBL_Registry[i].InUse = true;
+            Ut_CFE_TBL_Registry[i].TblUpdatedFlag = false;
             Ut_CFE_TBL_Registry[i].Buffer = malloc(Size);
             memset(Ut_CFE_TBL_Registry[i].Buffer, 0, Size);
             strncpy(Ut_CFE_TBL_Registry[i].Name, Name, CFE_TBL_MAX_FULL_NAME_LEN);
@@ -86,8 +86,8 @@ int32 Ut_CFE_TBL_AddTable(char *Filename, void *TablePtr)
     uint32          i;
 
     for (i=0; i < UT_CFE_TBL_MAX_TABLES; i++) {
-        if (Ut_CFE_TBL_Images[i].InUse == FALSE) {
-            Ut_CFE_TBL_Images[i].InUse = TRUE;
+        if (Ut_CFE_TBL_Images[i].InUse == false) {
+            Ut_CFE_TBL_Images[i].InUse = true;
             strncpy(Ut_CFE_TBL_Images[i].Filename, Filename, OS_MAX_PATH_LEN);
             Ut_CFE_TBL_Images[i].TablePtr = TablePtr;
             return(i);
@@ -101,7 +101,7 @@ int32 Ut_CFE_TBL_LoadTable(CFE_TBL_Handle_t TblHandle, void *SrcDataPtr)
 {
     if (Ut_CFE_TBL_Registry[TblHandle].InUse) {
         memcpy(Ut_CFE_TBL_Registry[TblHandle].Buffer, SrcDataPtr, Ut_CFE_TBL_Registry[TblHandle].Size);
-        Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag = TRUE;
+        Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag = true;
         return(CFE_SUCCESS);
     }
     else {
@@ -114,7 +114,7 @@ void Ut_CFE_TBL_ClearTables(void)
     uint32          i;
 
     for (i=0; i < UT_CFE_TBL_MAX_TABLES; i++) {
-        if (Ut_CFE_TBL_Registry[i].InUse == TRUE &&
+        if (Ut_CFE_TBL_Registry[i].InUse == true &&
             Ut_CFE_TBL_Registry[i].Buffer != NULL) {
             free(Ut_CFE_TBL_Registry[i].Buffer);
         }
@@ -128,7 +128,7 @@ int32 Ut_CFE_TBL_FindTable(char *Filename)
     uint32          i;
 
     for (i=0; i < UT_CFE_TBL_MAX_TABLES; i++) {
-        if ((Ut_CFE_TBL_Images[i].InUse == TRUE) &&
+        if ((Ut_CFE_TBL_Images[i].InUse == true) &&
             (strncmp(Ut_CFE_TBL_Images[i].Filename, Filename, strlen(Filename)) == 0)) {
             return(i);
         }
@@ -175,8 +175,8 @@ int32 Ut_CFE_TBL_GetAddressHook(void **TblPtr, CFE_TBL_Handle_t TblHandle)
 {
     if ((*TblPtr = Ut_CFE_TBL_GetAddress(TblHandle)) != NULL) {
 
-        if(Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag == TRUE) {
-            Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag = FALSE;
+        if(Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag == true) {
+            Ut_CFE_TBL_Registry[TblHandle].TblUpdatedFlag = false;
             return (CFE_TBL_INFO_UPDATED);
         }
         

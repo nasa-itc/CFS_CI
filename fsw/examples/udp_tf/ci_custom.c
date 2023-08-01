@@ -80,7 +80,7 @@ typedef struct
 typedef struct
 {
     CI_CustomMChnl_t     mc;        /**< Master channel             */
-    boolean              cltuRand;  /**< Is the cltu code blocks 
+    bool              cltuRand;  /**< Is the cltu code blocks 
                                           randomized                */
     uint8                cltuBuff[CI_CUSTOM_CLTU_BUFF_SIZE];
 } CI_CustomPChnl_t;
@@ -127,7 +127,7 @@ static int32 CI_CustomReadCltuSocket(void);
 *******************************************************************************/
 int32 CI_CustomInit(void)
 {
-    uint8 scId = CFE_SPACECRAFT_ID;
+    uint8 scId = CFE_PLATFORM_TBL_VALID_SCID_1;
     int32 iStatus = CI_ERROR;
     uint32 taskId = 0;
     IO_TransUdpConfig_t configSocket;
@@ -170,9 +170,9 @@ int32 CI_CustomInit(void)
                    (void *) &channelCfgTblUdp[0], sizeof(TCTF_ChannelService_t));
     
     /* Setup the CI Output Message (CLCW Message) */
-    CFE_SB_InitMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd,
-                   TO_APP_CMD_MID, sizeof(TO_CustomSetOcfCmd_t), TRUE);
-    CFE_SB_SetCmdCode((CFE_SB_MsgPtr_t) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd,
+    CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.ucCmdHeader,
+                   CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_CustomSetOcfCmd_t));
+    CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd,
                       TO_SET_OCF_DATA_CC);
     COP1_InitClcw(&g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.clcw, 0);
 
@@ -194,10 +194,11 @@ end_of_function:
 /******************************************************************************/
 /** \brief Custom app command response
 *******************************************************************************/
-int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
+int32 CI_CustomAppCmds(CFE_MSG_Message_t * pCmdMsg)
 {
     int32 iStatus = CI_SUCCESS;
-    uint32 uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
+    CFE_MSG_FcnCode_t uiCmdCode = 0;
+    CFE_MSG_GetFcnCode(pCmdMsg, &uiCmdCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command. Declare at top of file. 
@@ -205,7 +206,7 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
             if (CI_VerifyCmdLength(pCmdMsg, sizeof(CI_CustomExampleCmd_t)))
             {
                 CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                   "CI: Recvd example custom app cmd (%d)", uiCmdCode);
             }
             break;
@@ -223,21 +224,21 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
 /******************************************************************************/
 /** \brief Custom response to CI_ENABLE_TO_CC cmd code
 *******************************************************************************/
-void CI_CustomEnableTO(CFE_SB_MsgPtr_t pCmdMsg)
+void CI_CustomEnableTO(CFE_MSG_Message_t * pCmdMsg)
 {
     /* Copy the first part of the command (for socket setup) */
     CFE_PSP_MemCpy((void *) &g_CI_CustomData.toEnableCmd, 
                    (void *) pCmdMsg, sizeof(CI_EnableTOCmd_t));
 
     /* Setup the toEnableCmd */
-    CFE_SB_InitMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
-                   TO_APP_CMD_MID, sizeof(TO_EnableOutputCmd_t), FALSE); 
-    CFE_SB_SetCmdCode((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
+    CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd.ucCmdHeader, 
+                    CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_EnableOutputCmd_t)); 
+    CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
                       TO_ENABLE_OUTPUT_CC);
-    CFE_SB_GenerateChecksum((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_MSG_GenerateChecksum((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd);
     
     /* Send the TO Enable Telemetry Output Message */    
-    CFE_SB_SendMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_SB_TransmitMsg((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, true);
     
     return;
 }
@@ -266,7 +267,7 @@ void CI_CustomMain(void)
     
     if (g_CI_CustomData.pcSocket.udp.sockId < 0)
     {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR, 
+        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR, 
                           "CI: Socket ID not set. Check init. "
                           "Quitting CI_CustomMain.");
         goto end_of_function;
@@ -286,7 +287,7 @@ void CI_CustomMain(void)
             }
             else 
             {
-                CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+                CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                                   "CI: Unexpected Active Device. "
                                   "Quitting CI_CustomMain.");
                 break;
@@ -307,15 +308,15 @@ int32 CI_CustomReadCltuSocket(void)
     int32 iStatus = 0;
     int32 size = 0;
     CI_CustomPChnl_t *pPc = &g_CI_CustomData.pcSocket.pc;
-    CI_CustomMChnl_t *pMc = &pPc->mc;
-    TCTF_Hdr_t    *pTf = (TCTF_Hdr_t *) &pMc->tfBuff;
+    //CI_CustomMChnl_t *pMc = &pPc->mc;
+    //TCTF_Hdr_t    *pTf = (TCTF_Hdr_t *) &pMc->tfBuff;
 
-    uint8_t* TC_ptr = &pPc->cltuBuff[0];
-    CFE_SB_Msg_t  *pSbMsg;
+    //uint8_t* TC_ptr = &pPc->cltuBuff[0];
+    CFE_MSG_Message_t  *pSbMsg;
 
     /* CryptoLib Variables */
     TC_t crypto_tc_frame; 
-    pSbMsg = &crypto_tc_frame.tc_pdu;
+    pSbMsg = (CFE_MSG_Message_t*) &crypto_tc_frame.tc_pdu;
 
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
@@ -341,7 +342,7 @@ int32 CI_CustomReadCltuSocket(void)
     #endif
 
     /* CryptoLib */
-    iStatus = Crypto_TC_ProcessSecurity((char *) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
+    iStatus = Crypto_TC_ProcessSecurity((uint8_t*) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
     if (iStatus == CRYPTO_LIB_SUCCESS)
     {
         #ifdef CI_CUSTOM_DEBUG
@@ -355,7 +356,7 @@ int32 CI_CustomReadCltuSocket(void)
         #endif
 
         /* Publish to software bus */
-        CFE_SB_SendMsg(pSbMsg);
+        CFE_SB_TransmitMsg(pSbMsg, true);
     }
     else
     {

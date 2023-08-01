@@ -32,10 +32,10 @@ extern "C" {
 ** Local Defines
 */
 
-//#define CI_CUSTOM_DEBUG
+#define CI_CUSTOM_DEBUG
 
-/* Check new commands every 1s if not scheduled */
-#define CI_WAKEUP_TIMEOUT  1000  
+/* Check new commands every 10Hz if not scheduled */
+#define CI_WAKEUP_TIMEOUT  100
 
 #define CI_SCH_PIPE_DEPTH  10
 #define CI_CMD_PIPE_DEPTH  10

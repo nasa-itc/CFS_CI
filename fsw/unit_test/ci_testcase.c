@@ -230,7 +230,7 @@ void Test_CI_AppMain_RcvMsgFail(void)
     
     CI_AppMain();
     
-    UtAssert_True(g_CI_AppData.uiRunStatus == CFE_ES_APP_ERROR,
+    UtAssert_True(g_CI_AppData.uiRunStatus == CFE_ES_RunStatus_APP_ERROR,
                   "AppMain - RcvMsg Fail");
 
     /* For code coverage */
@@ -261,14 +261,14 @@ void Test_CI_RcvMsg_BadMsg(void)
 {
     int32 actual;
     int32 expected = CFE_SUCCESS;
-    CFE_SB_Msg_t msg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &msg;
+    CFE_MSG_Message_t msg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &msg;
 
     /* Initialize the Command pipe and subscribe to messages */
     CI_InitPipe();
 
-    CFE_SB_SetMsgId(pMsg, 0);
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(msg));         
+    CFE_MSG_SetMsgId(pMsg, 0);
+    CFE_MSG_SetSize(pMsg,  sizeof(msg));         
     Ut_CFE_SB_AddMsgToPipe(pMsg, g_CI_AppData.SchPipeId);
 
     actual = CI_RcvMsg(CFE_SB_PEND_FOREVER);
@@ -280,13 +280,13 @@ void Test_CI_RcvMsg_Wakeup(void)
     int32 actual;
     int32 expected = CFE_SUCCESS;
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
 
     /* Initialize the Command pipe and subscribe to messages */
     CI_InitPipe();
 
-    CFE_SB_SetMsgId(pMsg, CI_WAKEUP_MID);
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(cmdMsg));         
+    CFE_MSG_SetMsgId(pMsg, CI_WAKEUP_MID);
+    CFE_MSG_SetSize(pMsg,  sizeof(cmdMsg));         
     Ut_CFE_SB_AddMsgToPipe(pMsg, g_CI_AppData.SchPipeId);
 
     actual = CI_RcvMsg(CFE_SB_PEND_FOREVER);
@@ -316,14 +316,14 @@ void Test_CI_RcvMsg_Timeout(void)
 void Test_CI_ProcessNewCmds_BadMsg(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
 
     /* Initialize the Command pipe and subscribe to messages */
     CI_InitPipe();
 
     /* Send a Bad Command */
-    CFE_SB_SetMsgId(pMsg, 0);
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_NoArgCmd_t));         
+    CFE_MSG_SetMsgId(pMsg, 0);
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_NoArgCmd_t));         
     Ut_CFE_SB_AddMsgToPipe(pMsg, g_CI_AppData.CmdPipeId);
 
     CI_ProcessNewCmds();
@@ -335,15 +335,15 @@ void Test_CI_ProcessNewCmds_BadMsg(void)
 void Test_CI_ProcessNewCmds_AppCmd(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
 
     /* Initialize the Command pipe and subscribe to messages */
     CI_InitPipe();
 
     /* Send Noop Cmd Command */
-    CFE_SB_SetMsgId(pMsg, CI_APP_CMD_MID);
-    CFE_SB_SetCmdCode(pMsg, CI_NOOP_CC);
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_NoArgCmd_t));                      
+    CFE_MSG_SetMsgId(pMsg, CI_APP_CMD_MID);
+    CFE_MSG_SetFcnCode(pMsg,  CI_NOOP_CC);
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_NoArgCmd_t));                      
 
     Ut_CFE_SB_AddMsgToPipe(pMsg, g_CI_AppData.CmdPipeId);
 
@@ -356,13 +356,13 @@ void Test_CI_ProcessNewCmds_AppCmd(void)
 void Test_CI_ProcessNewCmds_SendHk(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
 
     /* Initialize the Command pipe and subscribe to messages */
     CI_InitPipe();
 
-    CFE_SB_SetMsgId(pMsg, CI_SEND_HK_MID);
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_NoArgCmd_t));                      
+    CFE_MSG_SetMsgId(pMsg, CI_SEND_HK_MID);
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_NoArgCmd_t));                      
 
     Ut_CFE_SB_AddMsgToPipe(pMsg, g_CI_AppData.CmdPipeId);
 
@@ -384,11 +384,11 @@ void Test_CI_ProcessNewCmds_SendHk(void)
 void Test_CI_ProcessNewAppCmds_Noop(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
     
-    CFE_SB_SetMsgId(pMsg, CI_APP_CMD_MID);
-    CFE_SB_SetCmdCode(pMsg, CI_NOOP_CC);
-    CFE_SB_SetTotalMsgLength(pMsg, 20);                      
+    CFE_MSG_SetMsgId(pMsg, CI_APP_CMD_MID);
+    CFE_MSG_SetFcnCode(pMsg,  CI_NOOP_CC);
+    CFE_MSG_SetSize(pMsg,  20);                      
 
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -396,7 +396,7 @@ void Test_CI_ProcessNewAppCmds_Noop(void)
     UtAssert_True(g_CI_AppData.HkTlm.usCmdErrCnt == 1,
                   "ProcessNewAppCmds - NOOP_CC - Invalid Len.");
     
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_NoArgCmd_t));
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_NoArgCmd_t));
     
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -409,11 +409,11 @@ void Test_CI_ProcessNewAppCmds_Noop(void)
 void Test_CI_ProcessNewAppCmds_Reset(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
     
-    CFE_SB_SetMsgId(pMsg, CI_APP_CMD_MID);
-    CFE_SB_SetCmdCode(pMsg, CI_RESET_CC);
-    CFE_SB_SetTotalMsgLength(pMsg, 20);                      
+    CFE_MSG_SetMsgId(pMsg, CI_APP_CMD_MID);
+    CFE_MSG_SetFcnCode(pMsg,  CI_RESET_CC);
+    CFE_MSG_SetSize(pMsg,  20);                      
 
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -421,7 +421,7 @@ void Test_CI_ProcessNewAppCmds_Reset(void)
     UtAssert_True(g_CI_AppData.HkTlm.usCmdErrCnt == 1,
                   "ProcessNewAppCmds - RESET_CC - Invalid Len.");
     
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_NoArgCmd_t));
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_NoArgCmd_t));
     
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -434,11 +434,11 @@ void Test_CI_ProcessNewAppCmds_Reset(void)
 void Test_CI_ProcessNewAppCmds_EnableTO(void)
 {
     CI_EnableTOCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
     
-    CFE_SB_SetMsgId(pMsg, CI_APP_CMD_MID);
-    CFE_SB_SetCmdCode(pMsg, CI_ENABLE_TO_CC);
-    CFE_SB_SetTotalMsgLength(pMsg, 20);                      
+    CFE_MSG_SetMsgId(pMsg, CI_APP_CMD_MID);
+    CFE_MSG_SetFcnCode(pMsg,  CI_ENABLE_TO_CC);
+    CFE_MSG_SetSize(pMsg,  20);                      
 
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -446,7 +446,7 @@ void Test_CI_ProcessNewAppCmds_EnableTO(void)
     UtAssert_True(g_CI_AppData.HkTlm.usCmdErrCnt == 1,
                   "ProcessNewAppCmds - ENABLE_TO_CC - Invalid Len.");
     
-    CFE_SB_SetTotalMsgLength(pMsg, sizeof(CI_EnableTOCmd_t));
+    CFE_MSG_SetSize(pMsg,  sizeof(CI_EnableTOCmd_t));
     
     /* Execute test */
     CI_ProcessNewAppCmds(pMsg);
@@ -459,10 +459,10 @@ void Test_CI_ProcessNewAppCmds_EnableTO(void)
 void Test_CI_ProcessNewAppCmds_Custom(void)
 {
     CI_NoArgCmd_t cmdMsg;
-    CFE_SB_MsgPtr_t pMsg = (CFE_SB_MsgPtr_t) &cmdMsg;
+    CFE_MSG_Message_t * pMsg = (CFE_MSG_Message_t *) &cmdMsg;
     
-    CFE_SB_SetMsgId(pMsg, CI_APP_CMD_MID);
-    CFE_SB_SetCmdCode(pMsg, 10);
+    CFE_MSG_SetMsgId(pMsg, CI_APP_CMD_MID);
+    CFE_MSG_SetFcnCode(pMsg,  10);
 
     Ut_CI_SetReturnCode(UT_CI_CUSTOMAPPCMDS_INDEX, 
                         CI_ERROR, 1);

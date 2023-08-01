@@ -30,8 +30,8 @@ void    UtTest_Add(void (*Test)(void), void (*Setup)(void), void (*Teardown)(voi
 
 /* Executes all unit tests contained in the test database.  Once all tests have finished executing 
  * a results summary is printed to the console and the test database is deleted.  This function also 
- * returns a boolean status indicating if any of the tests failed. (TRUE = at least one test failure 
- * has occurred, FALSE = all tests passed) */
+ * returns a bool status indicating if any of the tests failed. (true = at least one test failure 
+ * has occurred, false = all tests passed) */
 int     UtTest_Run(void);
 
 #endif
