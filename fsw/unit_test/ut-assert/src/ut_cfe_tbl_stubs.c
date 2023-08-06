@@ -73,15 +73,15 @@ void Ut_CFE_TBL_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_CFE_TBL_UseReturnCode(uint32 Index)
+bool Ut_CFE_TBL_UseReturnCode(uint32 Index)
 {
     if (Ut_CFE_TBL_ReturnCodeTable[Index].Count > 0) {
         Ut_CFE_TBL_ReturnCodeTable[Index].Count--;
         if (Ut_CFE_TBL_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,

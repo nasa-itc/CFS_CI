@@ -73,15 +73,15 @@ void Ut_OSAPI_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_OSAPI_UseReturnCode(uint32 Index)
+bool Ut_OSAPI_UseReturnCode(uint32 Index)
 {
     if (Ut_OSAPI_ReturnCodeTable[Index].Count > 0) {
         Ut_OSAPI_ReturnCodeTable[Index].Count--;
         if (Ut_OSAPI_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 /**********************************************************************************

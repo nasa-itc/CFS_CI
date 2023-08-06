@@ -23,7 +23,7 @@
 ** Revision 1.5 2011/03/31 14:53:04EDT rmcgraw
 ** Added functionality and supressed compiler warnings
 ** Revision 1.4 2011/03/23 17:08:18EDT rmcgraw
-** OS_FS_ERROR to OS_FS_SUCCESS for some OS file sys apis
+** OS_ERROR to OS_SUCCESS for some OS file sys apis
 ** Revision 1.3 2011/03/09 10:26:12EST rmcgraw
 ** Added SetRtnCode logic to PoolCreateEx
 ** Revision 1.2 2011/03/07 17:53:39EST sslegel
@@ -103,15 +103,15 @@ void Ut_CFE_ES_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_CFE_ES_UseReturnCode(uint32 Index)
+bool Ut_CFE_ES_UseReturnCode(uint32 Index)
 {
     if (Ut_CFE_ES_ReturnCodeTable[Index].Count > 0) {
         Ut_CFE_ES_ReturnCodeTable[Index].Count--;
         if (Ut_CFE_ES_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 int32 CFE_ES_GetResetType(uint32 *ResetSubtypePtr)
@@ -165,7 +165,7 @@ int32 CFE_ES_RunLoop(uint32 *ExitStatus)
     if (Ut_CFE_ES_HookTable.CFE_ES_RunLoop)
         return Ut_CFE_ES_HookTable.CFE_ES_RunLoop(ExitStatus);
 
-    return TRUE;
+    return true;
 }
 
 void CFE_ES_WaitForStartupSync(uint32 TimeOutMilliseconds)

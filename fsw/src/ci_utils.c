@@ -71,29 +71,31 @@ void CI_IncrHkCounter(uint16 * counter)
 /******************************************************************************/
 /** \brief Verify the command length against expected length
 *******************************************************************************/
-boolean CI_VerifyCmdLength(CFE_SB_MsgPtr_t pMsg,
+bool CI_VerifyCmdLength(CFE_MSG_Message_t * pMsg,
                            uint16 usExpectedLen)
 {
-    boolean bResult=FALSE;
-    uint16  usMsgLen=0;
+    bool bResult=false;
+    size_t usMsgLen=0;
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+    CFE_MSG_FcnCode_t usCmdCode = 0;
 
     if (pMsg != NULL)
     {
-        usMsgLen = CFE_SB_GetTotalMsgLength(pMsg);
+        CFE_MSG_GetSize(pMsg, &usMsgLen);
 
         if (usExpectedLen == usMsgLen)
         {
-            bResult = TRUE;
+            bResult = true;
         }
         else
         {
-            CFE_SB_MsgId_t MsgId = CFE_SB_GetMsgId(pMsg);
-            uint16 usCmdCode = CFE_SB_GetCmdCode(pMsg);
+            CFE_MSG_GetMsgId(pMsg, &MsgId);
+            CFE_MSG_GetFcnCode(pMsg, &usCmdCode);
 
-            CFE_EVS_SendEvent(CI_MSGLEN_ERR_EID, CFE_EVS_ERROR,
+            CFE_EVS_SendEvent(CI_MSGLEN_ERR_EID, CFE_EVS_EventType_ERROR,
                               "CI: Rcvd invalid msgLen: msgId=0x%04X, "
                               "cmdCode=%d, msgLen=%d, expectedLen=%d",
-                              MsgId, usCmdCode, usMsgLen, usExpectedLen);
+                              CFE_SB_MsgIdToValue(MsgId), usCmdCode, usMsgLen, usExpectedLen);
                               
             CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
         }

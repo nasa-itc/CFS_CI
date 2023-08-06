@@ -123,10 +123,11 @@ end_of_function:
 /******************************************************************************/
 /** \brief Custom app command response
 *******************************************************************************/
-int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
+int32 CI_CustomAppCmds(CFE_MSG_Message_t * cmdMsgPtr)
 {
     int32 iStatus = CI_SUCCESS;
-    uint32 uiCmdCode = CFE_SB_GetCmdCode(cmdMsgPtr);
+    CFE_MSG_FcnCode_t uiCmdCode = 0;
+    CFE_MSG_GetFcnCode(cmdMsgPtr, &uiCmdCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command. Declare at top of file. 
@@ -134,7 +135,7 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
             if (CI_VerifyCmdLength(cmdMsgPtr, sizeof(CI_CustomExampleCmd_t)))
             {
                 CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                   "CI: Recvd example custom app cmd (%d)", uiCmdCode);
             }
             break;
@@ -152,21 +153,21 @@ int32 CI_CustomAppCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
 /******************************************************************************/
 /** \brief Custom response to CI_ENABLE_TO_CC cmd code
 *******************************************************************************/
-void CI_CustomEnableTO(CFE_SB_MsgPtr_t cmdMsgPtr)
+void CI_CustomEnableTO(CFE_MSG_Message_t * cmdMsgPtr)
 {
     /* NOTE: In this case, we are simply piping the cmd to TO. */
     CFE_PSP_MemCpy((void *) &g_CI_CustomData.toEnableCmd, 
                    (void *) cmdMsgPtr, sizeof(TO_EnableOutputCmd_t));
 
     /* Setup the toEnableCmd */
-    CFE_SB_InitMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
-                   TO_APP_CMD_MID, sizeof(TO_EnableOutputCmd_t), FALSE); 
-    CFE_SB_SetCmdCode((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd, 
+    CFE_MSG_Init(CFE_MSG_PTR(g_CI_CustomData.toEnableCmd.ucCmdHeader), 
+                   CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_EnableOutputCmd_t)); 
+    CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, 
                       TO_ENABLE_OUTPUT_CC);
-    CFE_SB_GenerateChecksum((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_MSG_GenerateChecksum((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd);
 
     /* Send the TO Enable Telemetry Output Message */    
-    CFE_SB_SendMsg((CFE_SB_MsgPtr_t) &g_CI_CustomData.toEnableCmd);
+    CFE_SB_TransmitMsg((CFE_MSG_Message_t *) &g_CI_CustomData.toEnableCmd, true);
     return;
 }
 
@@ -190,18 +191,18 @@ void CI_CustomCleanup(void)
 void CI_CustomMain(void)
 {
     int32 size = 0;
-    CFE_SB_MsgPtr_t sbMsg;
+    CFE_MSG_Message_t * sbMsg;
     CFE_SB_MsgId_t  msgId;
 
     if (g_CI_CustomData.udp.sockId < 0)
     {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR, 
+        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR, 
                           "CI: Socket ID not set. Check init. "
                           "Quitting CI_CustomMain.");
         return;
     }
 
-    sbMsg = (CFE_SB_MsgPtr_t) &g_CI_CustomData.buffer[0];
+    sbMsg = (CFE_MSG_Message_t *) &g_CI_CustomData.buffer[0];
 
     while(size >= 0)
     {
@@ -213,17 +214,17 @@ void CI_CustomMain(void)
         if (size > 0)
         {
             /* Get Msg ID */
-            msgId = CFE_SB_GetMsgId(sbMsg);
+            CFE_MSG_GetMsgId(sbMsg, &msgId);
 
             /* NOTE: For this simple UDP example, the Checksum validation is 
                not included as to be able to test with cmdUtils tool. */
 
             /* CCSDS command checksum check. */
             /*
-            if (CFE_SB_ValidateChecksum(sbMsg) == FALSE)
+            if (CFE_SB_ValidateChecksum(sbMsg) == false)
             {
-                uint16 cmdCode = CFE_SB_GetCmdCode(sbMsg);
-                CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
+                uint16 cmdCode = CFE_MSG_GetFcnCode(sbMsg, CFE_MSG_FcnCode_t *FcnCode);
+                CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                                   "CI: MID:0x%04x - Cmd Checksum failed. CmdCode:%u",
                                   msgId, cmdCode);
                 continue;
@@ -231,21 +232,21 @@ void CI_CustomMain(void)
             */
 
             /* If command is GATE command, execute immediately. */
-            if (msgId == CI_GATE_CMD_MID)
+            if (CFE_SB_MsgIdToValue(msgId) == CI_GATE_CMD_MID)
             {
                 CI_CustomGateCmds(sbMsg);
             }
             /* Any other message is passed through to the SB. */
             else if (size > 0)
             {
-                CFE_SB_SendMsg(sbMsg);
+                CFE_SB_TransmitMsg(sbMsg, true);
             }
         }
     }
 
     if (size < 0)
     {
-        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_CUSTOM_ERR_EID, CFE_EVS_EventType_ERROR,
                           "CI: Error occured on socket read. "
                           "Quitting CI_CustomMain.");
     }
@@ -257,11 +258,11 @@ void CI_CustomMain(void)
 /******************************************************************************/
 /** \brief Custom Gate command response
 *******************************************************************************/
-void CI_CustomGateCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
+void CI_CustomGateCmds(CFE_MSG_Message_t * cmdMsgPtr)
 {
-    uint32 uiCmdCode = 0;
+    CFE_MSG_FcnCode_t uiCmdCode = 0;
 
-    uiCmdCode = CFE_SB_GetCmdCode(cmdMsgPtr);
+    CFE_MSG_GetFcnCode(cmdMsgPtr, &uiCmdCode);
     switch (uiCmdCode)
     {
         /*  Example of a valid custom command.
@@ -269,7 +270,7 @@ void CI_CustomGateCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
             if (CI_VerifyCmdLength(cmdMsgPtr, sizeof(CI_CustomExampleCmd_t)))
             {
                 CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                   "CI: Recvd example custom gate cmd (%d)", uiCmdCode);
             }
             break;
@@ -277,7 +278,7 @@ void CI_CustomGateCmds(CFE_SB_MsgPtr_t cmdMsgPtr)
 
         default:
             CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
-            CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
+            CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                               "CI: Recvd invalid Gate cmd (%d)", uiCmdCode);
             break;
     }

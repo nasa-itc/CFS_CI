@@ -81,13 +81,13 @@ int32 Ut_CFE_EVS_SendEventHook(uint16 EventID, uint16 EventType, char *EventText
     strncpy(&EventMessage.EventText[0], EventText, CFE_EVS_MAX_MESSAGE_LENGTH);
     UtList_Add(&EventQueue, &EventMessage, sizeof(EventMessage), 0);
 
-    if (EventType == CFE_EVS_DEBUG)
+    if (EventType == CFE_EVS_EventType_DEBUG)
         UtPrintf("DEBUG EVENT ID=%d %s\n", EventID, EventText);
-    else if (EventType == CFE_EVS_INFORMATION)
+    else if (EventType == CFE_EVS_EventType_INFORMATION)
         UtPrintf("INFO EVENT ID=%d %s\n", EventID, EventText);
-    else if (EventType == CFE_EVS_ERROR)
+    else if (EventType == CFE_EVS_EventType_ERROR)
         UtPrintf("ERROR EVENT ID=%d %s\n", EventID, EventText);
-    else if (EventType == CFE_EVS_CRITICAL)
+    else if (EventType == CFE_EVS_EventType_CRITICAL)
         UtPrintf("CRITICAL EVENT ID=%d %s\n", EventID, EventText);
     else
         UtPrintf("Invalid Event Type %d ID=%d %s\n", EventType, EventID, EventText);
@@ -95,7 +95,7 @@ int32 Ut_CFE_EVS_SendEventHook(uint16 EventID, uint16 EventType, char *EventText
     return CFE_SUCCESS;
 }
 
-boolean Ut_CFE_EVS_EventSent(uint16 EventID, uint16 EventType, char *EventText)
+bool Ut_CFE_EVS_EventSent(uint16 EventID, uint16 EventType, char *EventText)
 {
     UtListNode_t        *CurrentNode;
     Ut_CFE_EVS_Event_t  *EventMessagePtr;
@@ -106,9 +106,9 @@ boolean Ut_CFE_EVS_EventSent(uint16 EventID, uint16 EventType, char *EventText)
         if ((EventMessagePtr->EventID == EventID) &&
             (EventMessagePtr->EventType == EventType) &&
             (strncmp(EventText, EventMessagePtr->EventText, strlen(EventText)) == 0)) {
-            return(TRUE);
+            return(true);
         }
         CurrentNode = CurrentNode->Next;
     }
-    return(FALSE);
+    return(false);
 }

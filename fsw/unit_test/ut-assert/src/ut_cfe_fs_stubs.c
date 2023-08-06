@@ -61,15 +61,15 @@ void Ut_CFE_FS_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_CFE_FS_UseReturnCode(uint32 Index)
+bool Ut_CFE_FS_UseReturnCode(uint32 Index)
 {
     if (Ut_CFE_FS_ReturnCodeTable[Index].Count > 0) {
         Ut_CFE_FS_ReturnCodeTable[Index].Count--;
         if (Ut_CFE_FS_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 int32 CFE_FS_ReadHeader(CFE_FS_Header_t *Hdr, int32 FileDes)
@@ -91,9 +91,9 @@ int32 CFE_FS_SetTimestamp(int32 FileDes, CFE_TIME_SysTime_t NewTimestamp)
     return CFE_SUCCESS;
 }
 
-boolean CFE_FS_IsGzFile(const char *FileName)
+bool CFE_FS_IsGzFile(const char *FileName)
 {
-    return TRUE;
+    return true;
 }
 
 int32 CFE_FS_ExtractFilenameFromPath(const char *OriginalPath, char *FileNameOnly)

@@ -28,10 +28,10 @@
 
 int32 Ut_CFE_ES_RunLoopHook(uint32 *ExitStatus)
 {
-    if (*ExitStatus == CFE_ES_APP_RUN) {
-        return(TRUE);
+    if (*ExitStatus == CFE_ES_RunStatus_APP_RUN) {
+        return(true);
     }
-    else { /* CFE_ES_APP_EXIT, CFE_ES_APP_ERROR */
-        return(FALSE);
+    else { /* CFE_ES_APP_EXIT, CFE_ES_RunStatus_APP_ERROR */
+        return(false);
     }
 }

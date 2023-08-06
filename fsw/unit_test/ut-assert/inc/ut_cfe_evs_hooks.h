@@ -41,7 +41,7 @@ extern UtListHead_t        EventQueue;
                 UtAssert(Ut_CFE_EVS_EventSent(EventID, EventType, EventText), Description, __FILE__, __LINE__)
 
 #define     UtAssert_EventNotSent(EventID, EventType, EventText, Description) \
-                UtAssert(Ut_CFE_EVS_EventSent(EventID, EventType, EventText) == FALSE, Description, __FILE__, __LINE__)
+                UtAssert(Ut_CFE_EVS_EventSent(EventID, EventType, EventText) == false, Description, __FILE__, __LINE__)
 
 #define     UtAssert_NoEventSent(Description) \
                 UtAssert(UtList_IsEmpty(&EventQueue), Description, __FILE__, __LINE__)
@@ -50,6 +50,6 @@ void        Ut_CFE_EVS_ClearEventQueue(void);
 uint32      Ut_CFE_EVS_GetEventQueueDepth(void);
 uint32      Ut_CFE_EVS_GetEventCount(uint16 EventID, uint16 EventType, char *EventText);
 int32       Ut_CFE_EVS_SendEventHook(uint16 EventID, uint16 EventType, char *EventText);
-boolean     Ut_CFE_EVS_EventSent(uint16 EventID, uint16 EventType, char *EventText);
+bool     Ut_CFE_EVS_EventSent(uint16 EventID, uint16 EventType, char *EventText);
 
 #endif

@@ -50,7 +50,7 @@ extern "C" {
 */
 typedef struct
 {
-    uint8  ucCmdHeader[CFE_SB_CMD_HDR_SIZE];
+    CFE_MSG_CommandHeader_t  ucCmdHeader;
 } CI_NoArgCmd_t;
 
 typedef TO_EnableOutputCmd_t CI_EnableTOCmd_t;
@@ -59,7 +59,7 @@ typedef TO_EnableOutputCmd_t CI_EnableTOCmd_t;
 /* NOTE: In this example, the OutData is empty (not used.) */
 typedef struct
 {
-    uint8   ucTlmHeader[CFE_SB_TLM_HDR_SIZE];
+    CFE_MSG_TelemetryHeader_t  ucTlmHeader;
 } CI_OutData_t;
 
 

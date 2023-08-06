@@ -26,37 +26,37 @@
  * Function Definitions
  */
 
-boolean UtMem2BinFile(void *Memory, char *Filename, uint32 Length)
+bool UtMem2BinFile(void *Memory, char *Filename, uint32 Length)
 {
     FILE   *fp;
 
     if ((fp = fopen(Filename, "w"))) {
         fwrite(Memory, Length, 1, fp);
         fclose(fp);
-        return(TRUE);
+        return(true);
     }
     else {
         printf("UtMem2BinFile: Error Opening File: %s, %s\n", Filename, strerror(errno));
-        return(FALSE);
+        return(false);
     }
 }
 
-boolean UtBinFile2Mem(void *Memory, char *Filename, uint32 Length)
+bool UtBinFile2Mem(void *Memory, char *Filename, uint32 Length)
 {
     FILE   *fp;
 
     if ((fp = fopen(Filename, "r"))) {
         fread(Memory, Length, 1, fp);
         fclose(fp);
-        return(TRUE);
+        return(true);
     }
     else {
         printf("UtBinFile2Mem: Error Opening File: %s, %s\n", Filename, strerror(errno));
-        return(FALSE);
+        return(false);
     }
 }
 
-boolean UtMem2HexFile(void *Memory, char *Filename, uint32 Length)
+bool UtMem2HexFile(void *Memory, char *Filename, uint32 Length)
 {
     FILE        *fp;
     uint32       i;
@@ -80,11 +80,11 @@ boolean UtMem2HexFile(void *Memory, char *Filename, uint32 Length)
             fprintf(fp, "\n");
         }
         fclose(fp);
-        return(TRUE);
+        return(true);
     }
     else {
         printf("UtMem2HexFile: Error Opening File: %s, %s\n", Filename, strerror(errno));
-        return(FALSE);
+        return(false);
     }
 }
 
@@ -140,46 +140,46 @@ void UtPrintx(void *Memory, uint32 Length)
     UtPrintf("\n");
 }
 
-boolean UtMemCmpValue(void *Memory, uint8 Value, uint32 Length)
+bool UtMemCmpValue(void *Memory, uint8 Value, uint32 Length)
 {
     uint32 i;
     uint8  *Byte_ptr = Memory;
 
     for (i=0; i < Length; i++) {
         if (Byte_ptr[i] != Value) {
-            return(FALSE);
+            return(false);
         }
     }
-    return (TRUE);
+    return (true);
 }
 
-boolean UtMemCmpCount(void *Memory, uint32 Length)
+bool UtMemCmpCount(void *Memory, uint32 Length)
 {
     uint32 i;
     uint8  *Byte_ptr = Memory;
 
     for (i=0; i < Length; i++) {
         if (Byte_ptr[i] != (i & 0xFF)) {
-           return(FALSE);
+           return(false);
         }
     }
-    return (TRUE);
+    return (true);
 }
 
-boolean UtMem2BinFileCmp(void *Memory, char *Filename)
+bool UtMem2BinFileCmp(void *Memory, char *Filename)
 {
     FILE   *fp;
     uint8  *MemByte = Memory;
     int     FileByte;
-    boolean Success;
+    bool Success;
     uint32  i;
 
-    Success = TRUE;
+    Success = true;
     if ((fp = fopen(Filename, "r"))) {
 
         for (i=0; (FileByte = fgetc(fp)) != EOF; i++) {
             if (MemByte[i] != FileByte) {
-                Success = FALSE;
+                Success = false;
                 printf("UtMem2BinFileCmp: Miscompare in file: %s, byte offset: %u, expected: %u, found: %u\n", Filename, i, MemByte[i], FileByte);
                 break;
             }
@@ -187,7 +187,7 @@ boolean UtMem2BinFileCmp(void *Memory, char *Filename)
         fclose(fp);
     }
     else {
-        Success = FALSE;
+        Success = false;
         printf("UtMem2BinFileCmp: Error Opening File: %s, %s\n", Filename, strerror(errno));
     }
 

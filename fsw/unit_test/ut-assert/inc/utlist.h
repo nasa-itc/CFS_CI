@@ -110,8 +110,8 @@ UtListNode_t               *UtList_First(UtListHead_t *ListHead);
 /* Returns a pointer to the last node on the list.  This is the same as (UtListHead->Last). */
 UtListNode_t               *UtList_Last(UtListHead_t *ListHead);
 
-/* Returns TRUE if the list is empty.  This is the same as (UtListHead->NumberOfEntries == 0). */
-boolean                     UtList_IsEmpty(UtListHead_t *ListHead);
+/* Returns true if the list is empty.  This is the same as (UtListHead->NumberOfEntries == 0). */
+bool                     UtList_IsEmpty(UtListHead_t *ListHead);
 
 /* Returns the number of nodes on the list.  This is the same as (UtListHead->NumberOfEntries). */
 uint32                      UtList_Depth(UtListHead_t *ListHead);

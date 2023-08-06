@@ -34,7 +34,7 @@ typedef struct
 
 
 void Ut_CI_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt);
-boolean Ut_CI_UseReturnCode(uint32 Index);
+bool Ut_CI_UseReturnCode(uint32 Index);
 
 
 #endif

@@ -150,7 +150,7 @@ UtListNode_t *UtList_Last(UtListHead_t *ListHead)
     return(ListHead->Last);
 }
 
-boolean UtList_IsEmpty(UtListHead_t *ListHead)
+bool UtList_IsEmpty(UtListHead_t *ListHead)
 {
     return(ListHead->NumberOfEntries == 0);
 }

@@ -63,15 +63,15 @@ void Ut_CFE_EVS_SetReturnCode(uint32 Index, int32 RtnVal, uint32 CallCnt)
     }
 }
 
-boolean Ut_CFE_EVS_UseReturnCode(uint32 Index)
+bool Ut_CFE_EVS_UseReturnCode(uint32 Index)
 {
     if (Ut_CFE_EVS_ReturnCodeTable[Index].Count > 0) {
         Ut_CFE_EVS_ReturnCodeTable[Index].Count--;
         if (Ut_CFE_EVS_ReturnCodeTable[Index].Count == 0)
-            return(TRUE);
+            return(true);
     }
 
-    return(FALSE);
+    return(false);
 }
 
 int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterScheme)

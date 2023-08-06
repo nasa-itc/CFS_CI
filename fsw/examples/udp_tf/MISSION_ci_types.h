@@ -12,7 +12,7 @@
 *
 *   \par
 *       This header file contains definitions of command and telemetry data
-*       structures for CI applications for the RS422 transport protocol example.
+*       structures for CI applications for the UDP TCTF transport protocol example.
 *
 *   \par Limitations, Assumptions, External Events, and Notes:
 *     - Make use of the setup.sh script to move / link this file to the
@@ -41,6 +41,8 @@ extern "C" {
 #include "../ci/fsw/src/ci_hktlm.h"
 #include "../to/fsw/mission_inc/to_mission_cfg.h"
 
+#include "crypto.h"
+
 /*
 ** Local Defines
 */
@@ -61,7 +63,6 @@ typedef struct
 } CI_EnableTOCmd_t;
 
 
-/* NOTE: In this example, the OutData is empty (not used.) */
 typedef struct
 {
     CFE_MSG_TelemetryHeader_t  ucTlmHeader;

@@ -83,41 +83,29 @@ CI_AppData_t  g_CI_AppData;
 ******************************************************************************/
 void CI_AppMain(void)
 {
-    int32  iStatus=CFE_SUCCESS;
-    
-    /* Register the Application with Executive Services */
-    iStatus = CFE_ES_RegisterApp();
-    if (iStatus != CFE_SUCCESS)
-    {
-        CFE_ES_WriteToSysLog("CI - Failed to register the app (0x%08X)\n", 
-                             iStatus);
-        goto CI_AppMain_Exit_Tag;
-    }
-
     /* Performance Log Entry stamp - #1 */
     CFE_ES_PerfLogEntry(CI_MAIN_TASK_PERF_ID);
     
     /* Perform Application initializations */
     if (CI_AppInit() != CFE_SUCCESS)
     {
-        g_CI_AppData.uiRunStatus = CFE_ES_APP_ERROR;
+        g_CI_AppData.uiRunStatus = CFE_ES_RunStatus_APP_ERROR;
     }
 
     /* Application Main Loop. Call CFE_ES_RunLoop() to check for changes in the
     ** Application's status. If there is a request to kill this Application, 
     ** it will be passed in through the RunLoop call.  */
-    while (CFE_ES_RunLoop(&g_CI_AppData.uiRunStatus) == TRUE)
+    while (CFE_ES_RunLoop(&g_CI_AppData.uiRunStatus) == true)
     {
         /* Performance Log Exit stamp - #1 */
         CFE_ES_PerfLogExit(CI_MAIN_TASK_PERF_ID);
         
-        iStatus = CI_RcvMsg(g_CI_AppData.uiWakeupTimeout); 
+        CI_RcvMsg(g_CI_AppData.uiWakeupTimeout); 
     }
 
     /* Performance Log Exit stamp - #2 */
     CFE_ES_PerfLogExit(CI_MAIN_TASK_PERF_ID);
     
-CI_AppMain_Exit_Tag:
     /* Exit the application. Will call CI_CleanupCallback */
     CFE_ES_ExitApp(g_CI_AppData.uiRunStatus);
 } 
@@ -130,7 +118,7 @@ int32 CI_AppInit(void)
 {
     int32  iStatus=CFE_SUCCESS;
 
-    g_CI_AppData.uiRunStatus = CFE_ES_APP_RUN;
+    g_CI_AppData.uiRunStatus = CFE_ES_RunStatus_APP_RUN;
 
     /* Initialize Events */
     iStatus = CI_InitEvent();
@@ -144,7 +132,7 @@ int32 CI_AppInit(void)
     iStatus = CI_InitPipe();
     if (iStatus != CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
                          "CI - Pipe Init failed.");
         goto CI_AppInit_Exit_Tag;
     }
@@ -156,18 +144,18 @@ int32 CI_AppInit(void)
     iStatus = CI_CustomInit();
     if (iStatus != CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
                          "CI - Custom Init failed.");
         goto CI_AppInit_Exit_Tag;
     }
 
     /* Install the cleanup callback */
-    OS_TaskInstallDeleteHandler((void*)&CI_CleanupCallback);
+    OS_TaskInstallDeleteHandler((osal_task_entry) &CI_CleanupCallback);
 
 CI_AppInit_Exit_Tag:
     if (iStatus == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(CI_INIT_INF_EID, CFE_EVS_INFORMATION,
+        CFE_EVS_SendEvent(CI_INIT_INF_EID, CFE_EVS_EventType_INFORMATION,
                           "Application initialized");
     }
     else
@@ -198,7 +186,7 @@ int32 CI_InitEvent(void)
 
     /* Register the table with CFE */
     iStatus = CFE_EVS_Register(g_CI_AppData.EventTbl,
-                               CI_EVT_CNT, CFE_EVS_BINARY_FILTER);
+                               CI_EVT_CNT, CFE_EVS_EventFilter_BINARY);
     if (iStatus != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("CI - Failed to register with EVS (0x%08X)\n", 
@@ -227,11 +215,11 @@ int32 CI_InitPipe(void)
                                  g_CI_AppData.cSchPipeName);
     if (iStatus == CFE_SUCCESS)
     {
-        CFE_SB_Subscribe(CI_WAKEUP_MID, g_CI_AppData.SchPipeId);
+        CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CI_WAKEUP_MID), g_CI_AppData.SchPipeId);
     }
     else
     {
-        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
                          "CI - Failed to create SCH pipe (0x%08X)", 
                          iStatus);
         goto CI_InitPipe_Exit_Tag;
@@ -249,12 +237,12 @@ int32 CI_InitPipe(void)
                                  g_CI_AppData.cCmdPipeName);
     if (iStatus == CFE_SUCCESS)
     {
-        CFE_SB_Subscribe(CI_APP_CMD_MID, g_CI_AppData.CmdPipeId);
-        CFE_SB_Subscribe(CI_SEND_HK_MID, g_CI_AppData.CmdPipeId);
+        CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CI_APP_CMD_MID), g_CI_AppData.CmdPipeId);
+        CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CI_SEND_HK_MID), g_CI_AppData.CmdPipeId);
     }
     else
     {
-        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
                          "CI - Failed to create CMD pipe (0x%08X)", 
                          iStatus);
         goto CI_InitPipe_Exit_Tag;
@@ -278,15 +266,16 @@ int32 CI_InitData(void)
     /* Init output data */
     CFE_PSP_MemSet((void*)&g_CI_AppData.OutData, 0x00, 
                    sizeof(g_CI_AppData.OutData));
-    CFE_SB_InitMsg(&g_CI_AppData.OutData,
-                   CI_OUT_DATA_MID, sizeof(g_CI_AppData.OutData), TRUE);
+    CFE_MSG_Init(CFE_MSG_PTR(g_CI_AppData.OutData.ucTlmHeader),
+                 CFE_SB_ValueToMsgId(CI_OUT_DATA_MID), 
+                 sizeof(g_CI_AppData.OutData));
 
     /* Init housekeeping packet */
     CFE_PSP_MemSet((void*)&g_CI_AppData.HkTlm, 0x00, 
                    sizeof(g_CI_AppData.HkTlm));
-    CFE_SB_InitMsg(&g_CI_AppData.HkTlm,
-                   CI_HK_TLM_MID, sizeof(g_CI_AppData.HkTlm), TRUE);
-
+    CFE_MSG_Init(CFE_MSG_PTR(g_CI_AppData.HkTlm.TelemetryHeader),
+                 CFE_SB_ValueToMsgId(CI_HK_TLM_MID), 
+                 sizeof(g_CI_AppData.HkTlm));
     
     /* Init wakeup timeout */
     /* NOTE: Saving timeout locally allows for potential customization.
@@ -307,19 +296,19 @@ int32 CI_InitData(void)
 int32 CI_RcvMsg(int32 iBlocking)
 {
     int32           iStatus=CFE_SUCCESS;
-    CFE_SB_MsgPtr_t MsgPtr = NULL;
+    CFE_MSG_Message_t * MsgPtr = NULL;
     CFE_SB_MsgId_t  MsgId;
              
     /* Wait for WAKEUP messages from scheduler or use timeout rate */
-    iStatus = CFE_SB_RcvMsg(&MsgPtr, g_CI_AppData.SchPipeId, iBlocking);
+    iStatus = CFE_SB_ReceiveBuffer((CFE_SB_Buffer_t **)&MsgPtr,  g_CI_AppData.SchPipeId,  iBlocking);
         
     /* Performance Log Entry stamp */
     CFE_ES_PerfLogEntry(CI_MAIN_TASK_PERF_ID); 
         
     if (iStatus == CFE_SUCCESS)
     {
-        MsgId = CFE_SB_GetMsgId(MsgPtr);
-        switch (MsgId)
+        CFE_MSG_GetMsgId(MsgPtr, &MsgId);
+        switch (CFE_SB_MsgIdToValue(MsgId))
         {
             case CI_WAKEUP_MID:
                 CI_ProcessNewCmds();
@@ -327,9 +316,9 @@ int32 CI_RcvMsg(int32 iBlocking)
                 break;
             
             default:
-                CFE_EVS_SendEvent(CI_MSGID_ERR_EID, CFE_EVS_ERROR,
+                CFE_EVS_SendEvent(CI_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
                                   "CI - Recvd invalid SCH msgId (0x%04x)", 
-                                  MsgId);
+                                  CFE_SB_MsgIdToValue(MsgId));
         }
     }
     /* Implementation may set usWakeupTimeout instead of relying on
@@ -341,10 +330,10 @@ int32 CI_RcvMsg(int32 iBlocking)
     }
     else
     {
-        CFE_EVS_SendEvent(CI_PIPE_ERR_EID, CFE_EVS_ERROR,
+        CFE_EVS_SendEvent(CI_PIPE_ERR_EID, CFE_EVS_EventType_ERROR,
                          "CI: SB pipe read error (0x%08x), app will exit", 
                          iStatus);
-        g_CI_AppData.uiRunStatus= CFE_ES_APP_ERROR;
+        g_CI_AppData.uiRunStatus= CFE_ES_RunStatus_APP_ERROR;
     }
     
     return (iStatus);
@@ -356,17 +345,17 @@ int32 CI_RcvMsg(int32 iBlocking)
 ******************************************************************************/
 void CI_ProcessNewCmds(void)
 {
-    CFE_SB_MsgPtr_t CmdMsgPtr=NULL;
+    CFE_MSG_Message_t * CmdMsgPtr=NULL;
     CFE_SB_MsgId_t  CmdMsgId;
-    boolean         bGotNewMsg=TRUE;
+    bool         bGotNewMsg=true;
 
     while (bGotNewMsg)
     {
-        if (CFE_SB_RcvMsg(&CmdMsgPtr, g_CI_AppData.CmdPipeId, CFE_SB_POLL) == 
+        if (CFE_SB_ReceiveBuffer((CFE_SB_Buffer_t **)&CmdMsgPtr,  g_CI_AppData.CmdPipeId,  CFE_SB_POLL) == 
             CFE_SUCCESS)
         {
-            CmdMsgId = CFE_SB_GetMsgId(CmdMsgPtr);
-            switch (CmdMsgId)
+            CFE_MSG_GetMsgId(CmdMsgPtr, &CmdMsgId);
+            switch (CFE_SB_MsgIdToValue(CmdMsgId))
             {
                 case CI_APP_CMD_MID:
                     CI_ProcessNewAppCmds(CmdMsgPtr);
@@ -378,15 +367,15 @@ void CI_ProcessNewCmds(void)
 
                 default:
                     CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
-                    CFE_EVS_SendEvent(CI_MSGID_ERR_EID, CFE_EVS_ERROR,
+                    CFE_EVS_SendEvent(CI_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
                                       "CI - Recvd invalid CMD msgId (0x%04x)", 
-                                      CmdMsgId);
+                                      CFE_SB_MsgIdToValue(CmdMsgId));
                     break;
             }
         }
         else
         {
-            bGotNewMsg = FALSE;
+            bGotNewMsg = false;
         }
     }
 }
@@ -395,14 +384,14 @@ void CI_ProcessNewCmds(void)
 /*****************************************************************************/
 /** \brief Process New Application Commands
 ******************************************************************************/
-void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
+void CI_ProcessNewAppCmds(CFE_MSG_Message_t * pCmdMsg)
 {
     int32 iStatus = CI_SUCCESS;
-    uint32  uiCmdCode=0;
+    CFE_MSG_FcnCode_t uiCmdCode=0;
 
     if (pCmdMsg != NULL)
     {
-        uiCmdCode = CFE_SB_GetCmdCode(pCmdMsg);
+        CFE_MSG_GetFcnCode(pCmdMsg, &uiCmdCode);
         switch (uiCmdCode)
         {
             case CI_NOOP_CC:
@@ -410,7 +399,7 @@ void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
                 {
                     CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
                     CFE_EVS_SendEvent(CI_CMD_INF_EID,
-                                      CFE_EVS_INFORMATION,
+                                      CFE_EVS_EventType_INFORMATION,
                                       "No-op command. Version %d.%d.%d.%d",
                                       CI_MAJOR_VERSION,
                                       CI_MINOR_VERSION,
@@ -426,7 +415,7 @@ void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
                     g_CI_AppData.HkTlm.usCmdCnt = 0;
                     g_CI_AppData.HkTlm.usCmdErrCnt = 0;
                     OS_MutSemGive(g_CI_AppData.ciMutex);
-                    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                       "Recvd RESET cmd (%d)", uiCmdCode);
                 }
                 break;
@@ -435,7 +424,7 @@ void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
                 if (CI_VerifyCmdLength(pCmdMsg, sizeof(CI_EnableTOCmd_t)))
                 {
                     CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdCnt);
-                    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_INFORMATION,
+                    CFE_EVS_SendEvent(CI_CMD_INF_EID, CFE_EVS_EventType_INFORMATION,
                                       "Sending Enable TO Cmd (%d)",
                                       CI_ENABLE_TO_CC);
 
@@ -450,7 +439,7 @@ void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
                 if (iStatus != CI_SUCCESS) 
                 {
                     CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
-                    CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_ERROR,
+                    CFE_EVS_SendEvent(CI_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                                       "Recvd invalid app cmd code (%d)", 
                                       uiCmdCode);
                 }
@@ -466,8 +455,8 @@ void CI_ProcessNewAppCmds(CFE_SB_MsgPtr_t pCmdMsg)
 void CI_ReportHousekeeping(void)
 {
     OS_MutSemTake(g_CI_AppData.ciMutex);
-    CFE_SB_TimeStampMsg((CFE_SB_MsgPtr_t)&g_CI_AppData.HkTlm);
-    CFE_SB_SendMsg((CFE_SB_MsgPtr_t)&g_CI_AppData.HkTlm);
+    CFE_SB_TimeStampMsg((CFE_MSG_Message_t *)&g_CI_AppData.HkTlm);
+    CFE_SB_TransmitMsg((CFE_MSG_Message_t *)&g_CI_AppData.HkTlm, true);
     OS_MutSemGive(g_CI_AppData.ciMutex);
 }
     
@@ -477,8 +466,8 @@ void CI_ReportHousekeeping(void)
 void CI_SendOutData(void)
 {
     OS_MutSemTake(g_CI_AppData.ciMutex);
-    CFE_SB_TimeStampMsg((CFE_SB_MsgPtr_t)&g_CI_AppData.OutData);
-    CFE_SB_SendMsg((CFE_SB_MsgPtr_t)&g_CI_AppData.OutData);
+    CFE_SB_TimeStampMsg((CFE_MSG_Message_t *)&g_CI_AppData.OutData);
+    CFE_SB_TransmitMsg((CFE_MSG_Message_t *)&g_CI_AppData.OutData, true);
     OS_MutSemGive(g_CI_AppData.ciMutex);
 }
 
