@@ -94,7 +94,7 @@ bool CI_VerifyCmdLength(CFE_MSG_Message_t * pMsg,
 
             CFE_EVS_SendEvent(CI_MSGLEN_ERR_EID, CFE_EVS_EventType_ERROR,
                               "CI: Rcvd invalid msgLen: msgId=0x%04X, "
-                              "cmdCode=%d, msgLen=%d, expectedLen=%d",
+                              "cmdCode=%d, msgLen=%ld, expectedLen=%d",
                               CFE_SB_MsgIdToValue(MsgId), usCmdCode, usMsgLen, usExpectedLen);
                               
             CI_IncrHkCounter(&g_CI_AppData.HkTlm.usCmdErrCnt);
