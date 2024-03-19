@@ -31,8 +31,8 @@ extern "C" {
 /*
 ** Local Defines
 */
-/* Check new commands every 1s if not scheduled */
-#define CI_WAKEUP_TIMEOUT  1000  
+/* Check new commands every 10ms (100Hz) if not scheduled */
+#define CI_WAKEUP_TIMEOUT  10
 
 #define CI_SCH_PIPE_DEPTH  10
 #define CI_CMD_PIPE_DEPTH  10
@@ -44,7 +44,7 @@ extern "C" {
 #define CI_CUSTOM_UDP_TIMEOUT 100
 #define CI_CUSTOM_MAX_IP_STRING_SIZE  16 
 
-#define CI_CUSTOM_BUFFER_SIZE 1000
+#define CI_CUSTOM_BUFFER_SIZE 1072
 
 #define CI_CUSTOM_TASK_STACK_PTR NULL
 #define CI_CUSTOM_TASK_STACK_SIZE 0x4000
