@@ -80,7 +80,7 @@ typedef struct
 typedef struct
 {
     CI_CustomMChnl_t     mc;        /**< Master channel             */
-    bool              cltuRand;  /**< Is the cltu code blocks 
+    bool                 cltuRand;  /**< Is the cltu code blocks 
                                           randomized                */
     uint8                cltuBuff[CI_CUSTOM_CLTU_BUFF_SIZE];
 } CI_CustomPChnl_t;
@@ -325,7 +325,7 @@ int32 CI_CustomReadCltuSocket(void)
 
     /* 
     ** In this implementation it is assumed that:
-    **   Recevied TC frame is complete without errors
+    **   Received TC frame is complete without errors
     **   A single Space Packet is in the TC frame
     **   Code blocks are not in use
     **   COP-1 is not in use
