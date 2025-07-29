@@ -80,7 +80,7 @@ typedef struct
 typedef struct
 {
     CI_CustomMChnl_t     mc;        /**< Master channel             */
-    bool              cltuRand;  /**< Is the cltu code blocks 
+    bool                 cltuRand;  /**< Is the cltu code blocks 
                                           randomized                */
     uint8                cltuBuff[CI_CUSTOM_CLTU_BUFF_SIZE];
 } CI_CustomPChnl_t;
@@ -170,11 +170,11 @@ int32 CI_CustomInit(void)
                    (void *) &channelCfgTblUdp[0], sizeof(TCTF_ChannelService_t));
     
     /* Setup the CI Output Message (CLCW Message) */
-    CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.ucCmdHeader,
-                   CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_CustomSetOcfCmd_t));
-    CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd,
-                      TO_SET_OCF_DATA_CC);
-    COP1_InitClcw(&g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.clcw, 0);
+    // CFE_MSG_Init((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.ucCmdHeader,
+    //                CFE_SB_ValueToMsgId(TO_APP_CMD_MID), sizeof(TO_CustomSetOcfCmd_t));
+    // CFE_MSG_SetFcnCode((CFE_MSG_Message_t *) &g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd,
+    //                   TO_SET_OCF_DATA_CC);
+    // COP1_InitClcw(&g_CI_CustomData.pcSocket.pc.mc.vChnls[0].clcwCmd.clcw, 0);
 
     /* Initialize the managed parameters of physical channels */
     g_CI_CustomData.pcSocket.pc.cltuRand = CI_CUSTOM_CLTU_RANDOM_UDP;
@@ -325,13 +325,13 @@ int32 CI_CustomReadCltuSocket(void)
 
     /* 
     ** In this implementation it is assumed that:
-    **   Recevied TC frame is complete without errors
+    **   Received TC frame is complete without errors
     **   A single Space Packet is in the TC frame
     **   Code blocks are not in use
     **   COP-1 is not in use
     */
 
-   #ifdef CI_CUSTOM_DEBUG
+    #ifdef CI_CUSTOM_DEBUG
     /* Debug prints */
         OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
         for (uint16 i = 0; i < size; i++)

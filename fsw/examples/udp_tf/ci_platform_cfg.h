@@ -32,7 +32,7 @@ extern "C" {
 ** Local Defines
 */
 
-#define CI_CUSTOM_DEBUG
+//#define CI_CUSTOM_DEBUG
 
 /* Check new commands every 10Hz if not scheduled */
 #define CI_WAKEUP_TIMEOUT  100
@@ -48,9 +48,9 @@ extern "C" {
 
 #define CI_CUSTOM_CLTU_RANDOM_UDP    0
 
-#define CI_CUSTOM_CLTU_BUFF_SIZE 1000
-#define CI_CUSTOM_TF_BUFF_SIZE 1000
-#define CI_CUSTOM_BUFFER_SIZE 1000
+#define CI_CUSTOM_CLTU_BUFF_SIZE 1024
+#define CI_CUSTOM_TF_BUFF_SIZE 1024
+#define CI_CUSTOM_BUFFER_SIZE 1024
 
 #define CI_CUSTOM_TASK_STACK_PTR NULL
 #define CI_CUSTOM_TASK_STACK_SIZE 0x4000
