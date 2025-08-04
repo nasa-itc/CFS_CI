@@ -318,6 +318,13 @@ int32 CI_CustomReadCltuSocket(void)
     TC_t crypto_tc_frame; 
     pSbMsg = (CFE_MSG_Message_t*) &crypto_tc_frame.tc_pdu;
 
+    // CCSDS_t sdls_frame;
+
+    /* Extended Procedures */
+    uint8_t  sdls_ep_reply_local[1024];
+    uint16_t reply_length = 0;
+    uint8_t eproc = 1;
+
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
                           &pPc->cltuBuff[0], 
@@ -355,6 +362,25 @@ int32 CI_CustomReadCltuSocket(void)
             OS_printf("\n");
         #endif
 
+        if (eproc)
+        {
+            iStatus = Crypto_Get_Sdls_Ep_Reply(&sdls_ep_reply_local[0], &reply_length);
+            if (iStatus != CRYPTO_LIB_SUCCESS)
+            {
+                OS_printf("Crypto_Get_Sdls_Ep_Reply: Failure\t Status = %d", iStatus);
+            }
+            else
+            {
+                OS_printf("Crypto_Get_Sdls_Ep_Reply: \n\t0x");
+                for (uint16 i = 0; i < reply_length; i++)
+                {
+                    OS_printf("%02X", sdls_ep_reply_local[i]);
+                }
+                OS_printf("\n");
+            }
+            //IO_TransUdpSnd(&g_CI_CustomData.pcSocket.udp)
+        }
+        
         /* Publish to software bus */
         CFE_SB_TransmitMsg(pSbMsg, true);
     }
