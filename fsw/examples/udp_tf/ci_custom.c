@@ -323,7 +323,6 @@ int32 CI_CustomReadCltuSocket(void)
     /* Extended Procedures */
     uint8_t  sdls_ep_reply_local[1024];
     uint16_t reply_length = 0;
-    // uint8_t eproc = 1;
 
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
@@ -338,7 +337,7 @@ int32 CI_CustomReadCltuSocket(void)
     **   COP-1 is not in use
     */
 
-    #ifdef CI_CUSTOM_DEBUG
+    // #ifdef CI_CUSTOM_DEBUG
     /* Debug prints */
         OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
         for (uint16 i = 0; i < size; i++)
@@ -346,13 +345,13 @@ int32 CI_CustomReadCltuSocket(void)
             OS_printf("%02x", pPc->cltuBuff[i]);
         }
         OS_printf("\n");
-    #endif
+    // #endif
 
     /* CryptoLib */
     iStatus = Crypto_TC_ProcessSecurity((uint8_t*) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
     if (iStatus == CRYPTO_LIB_SUCCESS)
     {
-        #ifdef CI_CUSTOM_DEBUG
+        // #ifdef CI_CUSTOM_DEBUG
             /* Debug prints */
             OS_printf("CI_CustomReadCltuSocket - crypto_tc_frame.tc_pdu[%d] = 0x", crypto_tc_frame.tc_pdu_len);
             for (uint16 i = 0; i < crypto_tc_frame.tc_pdu_len; i++)
@@ -360,7 +359,7 @@ int32 CI_CustomReadCltuSocket(void)
                 OS_printf("%02x", crypto_tc_frame.tc_pdu[i]);
             }
             OS_printf("\n");
-        #endif
+        // #endif
 
         iStatus = Crypto_Get_Sdls_Ep_Reply(&sdls_ep_reply_local[0], &reply_length);
         if (iStatus != CRYPTO_LIB_SUCCESS)
@@ -373,6 +372,7 @@ int32 CI_CustomReadCltuSocket(void)
         {
             pSbMsg = (CFE_MSG_Message_t*) &sdls_ep_reply_local;
             CFE_SB_TransmitMsg(pSbMsg, false);
+            size = reply_length;
             memset(&sdls_ep_reply_local, 0x00, (size_t)reply_length);
             reply_length = 0;
         }
