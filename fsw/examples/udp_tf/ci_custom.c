@@ -337,21 +337,21 @@ int32 CI_CustomReadCltuSocket(void)
     **   COP-1 is not in use
     */
 
-    // #ifdef CI_CUSTOM_DEBUG
-    /* Debug prints */
+    #ifdef CI_CUSTOM_DEBUG
+        /* Debug prints */
         OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
         for (uint16 i = 0; i < size; i++)
         {
             OS_printf("%02x", pPc->cltuBuff[i]);
         }
         OS_printf("\n");
-    // #endif
+    #endif
 
     /* CryptoLib */
     iStatus = Crypto_TC_ProcessSecurity((uint8_t*) &pPc->cltuBuff[0], &size, &crypto_tc_frame);
     if (iStatus == CRYPTO_LIB_SUCCESS)
     {
-        // #ifdef CI_CUSTOM_DEBUG
+        #ifdef CI_CUSTOM_DEBUG
             /* Debug prints */
             OS_printf("CI_CustomReadCltuSocket - crypto_tc_frame.tc_pdu[%d] = 0x", crypto_tc_frame.tc_pdu_len);
             for (uint16 i = 0; i < crypto_tc_frame.tc_pdu_len; i++)
@@ -359,16 +359,18 @@ int32 CI_CustomReadCltuSocket(void)
                 OS_printf("%02x", crypto_tc_frame.tc_pdu[i]);
             }
             OS_printf("\n");
-        // #endif
+        #endif
 
         iStatus = Crypto_Get_Sdls_Ep_Reply(&sdls_ep_reply_local[0], &reply_length);
         if (iStatus != CRYPTO_LIB_SUCCESS)
         {
+#ifdef CI_CUSTOM_DEBUG
             OS_printf("Crypto_Get_Sdls_Ep_Reply: Failure\t Status = %d", iStatus);
+#endif
         }
         
         /* Publish to software bus */
-        if (reply_length >= 6)
+        if (reply_length >= 6 && ((((sdls_ep_reply_local[0] << 8) | (sdls_ep_reply_local[1])) & 0xFFF0) == 0x0980))
         {
             pSbMsg = (CFE_MSG_Message_t*) &sdls_ep_reply_local;
             CFE_SB_TransmitMsg(pSbMsg, false);
