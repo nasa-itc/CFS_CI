@@ -318,6 +318,12 @@ int32 CI_CustomReadCltuSocket(void)
     TC_t crypto_tc_frame; 
     pSbMsg = (CFE_MSG_Message_t*) &crypto_tc_frame.tc_pdu;
 
+    // CCSDS_t sdls_frame;
+
+    /* Extended Procedures */
+    uint8_t  sdls_ep_reply_local[1024];
+    uint16_t reply_length = 0;
+
     /* Read Full CLTU from socket */
     size = IO_TransUdpRcv(&g_CI_CustomData.pcSocket.udp, 
                           &pPc->cltuBuff[0], 
@@ -332,7 +338,7 @@ int32 CI_CustomReadCltuSocket(void)
     */
 
     #ifdef CI_CUSTOM_DEBUG
-    /* Debug prints */
+        /* Debug prints */
         OS_printf("CI_CustomReadCltuSocket - pPc->cltuBuff[%d] = 0x", size);
         for (uint16 i = 0; i < size; i++)
         {
@@ -355,8 +361,28 @@ int32 CI_CustomReadCltuSocket(void)
             OS_printf("\n");
         #endif
 
+        iStatus = Crypto_Get_Sdls_Ep_Reply(&sdls_ep_reply_local[0], &reply_length);
+        if (iStatus != CRYPTO_LIB_SUCCESS)
+        {
+#ifdef CI_CUSTOM_DEBUG
+            OS_printf("Crypto_Get_Sdls_Ep_Reply: Failure\t Status = %d", iStatus);
+#endif
+        }
+        
         /* Publish to software bus */
-        CFE_SB_TransmitMsg(pSbMsg, true);
+        if (reply_length >= 6 && ((((sdls_ep_reply_local[0] << 8) | (sdls_ep_reply_local[1])) & 0xFFF0) == 0x0980))
+        {
+            pSbMsg = (CFE_MSG_Message_t*) &sdls_ep_reply_local;
+            CFE_SB_TransmitMsg(pSbMsg, false);
+            size = reply_length;
+            memset(&sdls_ep_reply_local, 0x00, (size_t)reply_length);
+            reply_length = 0;
+        }
+        else
+        {
+            CFE_SB_TransmitMsg(pSbMsg, true);
+        }
+        
     }
     else
     {
